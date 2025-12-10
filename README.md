@@ -60,3 +60,4 @@ another test
 // test
 // achievement test
 // trigger achievement
+// streak test

@@ -53,3 +53,4 @@ A gamified CLI that turns daily developer work into an RPG loop. Track XP from G
 6. `rook leaderboard`
 7. `rook friends add <username>`
 8. `rook leaderboard --friends`
+# Production deployment complete! 🎉

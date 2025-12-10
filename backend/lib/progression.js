@@ -62,7 +62,7 @@ async function unlockAchievement(pool, userId, achievement) {
 }
 
 function shouldUnlock(code, prevTotal, newTotal, newStreak) {
-  if (code === 'FIRST_BLOOD') return (prevTotal || 0) === 0 && newTotal > 0;
+  if (code === 'FIRST_BLOOD') return newTotal > 0;
   if (code === 'STREAK_3') return newStreak >= 3;
   if (code === 'STREAK_7') return newStreak >= 7;
   if (code === 'XP_1000') return newTotal >= 1000;

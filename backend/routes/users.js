@@ -1,6 +1,7 @@
 import express from 'express';
 import { applyXp, calculateLevel, ensureUserStats } from '../lib/progression.js';
 import { completeMaintainQuest, updateWeeklyXpQuest } from '../lib/quests.js';
+import { generateCoachTip } from '../lib/coach.js';
 
 export default (pool) => {
   const router = express.Router();
@@ -43,6 +44,10 @@ export default (pool) => {
          ORDER BY ua.unlocked_at DESC`,
         [userId]
       );
+      const { rows: recentActivity } = await pool.query('SELECT amount, reason, activity_type, created_at FROM xp_activity WHERE user_id=$1 ORDER BY created_at DESC LIMIT 5', [
+        userId
+      ]);
+      const coachTip = await generateCoachTip({ pool, userId, username: row.username });
       const level = calculateLevel(row.total_xp || 0);
       res.json({
         userId: row.user_id,
@@ -59,7 +64,9 @@ export default (pool) => {
           icon: a.icon,
           rarity: a.rarity,
           unlockedAt: a.unlocked_at
-        }))
+        })),
+        coachTip,
+        recentActivity
       });
     } catch (err) {
       console.error(err);
@@ -97,6 +104,22 @@ export default (pool) => {
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Failed to fetch activity' });
+    }
+  });
+
+  // alias endpoint for history
+  router.get('/:userId/xp', async (req, res) => {
+    const { userId } = req.params;
+    const limit = Number(req.query.limit || 20);
+    try {
+      const { rows } = await pool.query('SELECT amount, reason, activity_type, created_at FROM xp_activity WHERE user_id=$1 ORDER BY created_at DESC LIMIT $2', [
+        userId,
+        limit
+      ]);
+      res.json(rows);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to fetch xp history' });
     }
   });
 

@@ -15,6 +15,8 @@ A gamified CLI that turns daily developer work into an RPG loop. Track XP from G
 - `rook leaderboard [--friends] [--limit N] [--page N] [--watch]` – View global/friends ladder, highlight yourself, auto-refresh with Socket.io or polling when watching.
 - `rook friends [list|add|remove|leaderboard]` – Manage your party and see friends-only ranks.
 - `rook share <achievement|stats> [id] [--twitter|--discord|--slack]` – Generate shareable links or ASCII stats cards.
+- `rook connect` – Select repos and auto-create GitHub webhooks pointing at the Rook backend.
+- `rook history` – View your recent XP timeline.
 
 ## Backend
 - Stack: Express + PostgreSQL + Socket.io
@@ -36,23 +38,32 @@ A gamified CLI that turns daily developer work into an RPG loop. Track XP from G
 - `POST /api/users/:userId/friends`
 - `DELETE /api/users/:userId/friends/:friendId`
 - `GET /api/users/:userId/activity?limit=`
+- `GET /api/users/:userId/xp?limit=` (alias for XP history)
 - `POST /api/users/:userId/achievements/:achievementId/share`
+- `POST /api/github/webhooks` (body: `{ repoFullName, token }`) to auto-configure repo webhooks pointing to `/api/webhooks/github`
 
 ## Notes
 - Config stored at `~/.rook/config.json` (contains GitHub token, user id, API URL).
 - Level formula: `floor(sqrt(totalXp / 1000)) + 1` with per-level progress bars.
 - Daily quests reset at midnight UTC; weekly boss quests regenerate each week.
 - Leaderboards broadcast `leaderboard:update` events via Socket.io; CLI `--watch` auto-refreshes.
+- Optional coach tips: set `OPENAI_API_KEY` on the backend to receive one-line guidance in `rook stats`.
 
-## Test Flow
-1. `rook login`
-2. `rook stats`
-3. Make a commit on GitHub (or trigger webhook)
-4. `rook stats` (XP should increase)
-5. `rook dungeon`
-6. `rook leaderboard`
-7. `rook friends add <username>`
-8. `rook leaderboard --friends`
+## Local Testing Flow
+- Backend env: `DATABASE_URL=postgres://...`, `PORT=4000`, `GITHUB_WEBHOOK_SECRET=<secret>`, optional `OPENAI_API_KEY`.
+- Start backend: `cd backend && npm start` (http://localhost:4000).
+- CLI: `rook login --api-url http://localhost:4000/api`.
+- `rook connect` and pick a test repo to auto-create webhooks.
+- Trigger commits/PRs/issues/reviews; then:
+  - `rook stats` (XP, streak, achievements, coach tip when OpenAI enabled)
+  - `rook dungeon` (quest progress ticks up)
+  - `rook history` (XP activity log)
+  - `rook leaderboard --watch` (live updates or polling fallback)
+
+## Production Verification
+- Render web service URL: https://rook-3658.onrender.com/api (Supabase DATABASE_URL with SSL as required).
+- `rook login` (defaults to the Render API), then `rook connect` for real repos.
+- Use real GitHub activity to confirm quests, streaks, achievements, weekly XP quest, coach tips (if OpenAI enabled), and leaderboard updates.
 # Production deployment complete! 🎉
 # Webhook working perfectly! 🚀
 # Test 

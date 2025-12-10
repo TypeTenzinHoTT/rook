@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { getConfig } from './config.js';
-import { Achievement, LeaderboardEntry, Quest, UserStats } from '../types/index.js';
+import { Achievement, LeaderboardEntry, Quest, UserStats, XPActivity } from '../types/index.js';
 
 function createClient(): AxiosInstance {
   const config = getConfig();
@@ -91,5 +91,17 @@ export async function shareAchievement(userId: string, achievementId: string, pl
 export async function getRecentActivity(userId: string, limit = 5) {
   const client = createClient();
   const { data } = await client.get(`/users/${userId}/activity`, { params: { limit } });
+  return data;
+}
+
+export async function getXpHistory(userId: string, limit = 20): Promise<XPActivity[]> {
+  const client = createClient();
+  const { data } = await client.get(`/users/${userId}/xp`, { params: { limit } });
+  return data;
+}
+
+export async function connectWebhook(repoFullName: string, token: string) {
+  const client = createClient();
+  const { data } = await client.post(`/github/webhooks`, { repoFullName, token });
   return data;
 }

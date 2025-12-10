@@ -8,6 +8,7 @@ import { Octokit } from 'octokit';
 import { saveConfig } from '../lib/config.js';
 import { registerUser } from '../lib/api.js';
 import { formatErrorMessage } from '../lib/ui.js';
+import { connect } from './connect.js';
 
 function banner(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -69,6 +70,18 @@ export async function login() {
         { padding: 1, borderColor: 'green' }
       )
     );
+
+    const { connectNow } = await inquirer.prompt<{ connectNow: boolean }>([
+      {
+        type: 'confirm',
+        name: 'connectNow',
+        message: 'Do you want to connect GitHub repos to Rook now?',
+        default: false
+      }
+    ]);
+    if (connectNow) {
+      await connect();
+    }
   } catch (error: any) {
     console.error(chalk.red('Login failed:'), formatErrorMessage(error));
     console.error(chalk.yellow('Tips: ensure your PAT has read:user and repo scopes, and the API URL is reachable.'));

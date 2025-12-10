@@ -10,6 +10,7 @@ import leaderboardRoutes from './routes/leaderboard.js';
 import socialRoutes from './routes/social.js';
 import githubWebhook from './webhooks/github.js';
 import { seedAchievements } from './lib/progression.js';
+import githubRoutes from './routes/github.js';
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.use('/api/users', questsRoutes(pool));
 app.use('/api', leaderboardRoutes(pool));
 app.use('/api/users', socialRoutes(pool));
 app.use('/api/webhooks/github', githubWebhook(pool));
+app.use('/api', githubRoutes(pool));
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 

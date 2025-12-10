@@ -14,8 +14,10 @@ export interface UserStats {
   streak: number;
   lastActive: string;
   achievements: Achievement[];
+  coachTip?: string | null;
   rank?: number;
   guild?: string;
+  recentActivity?: XPActivity[];
 }
 
 export interface Achievement {
@@ -45,6 +47,13 @@ export interface LeaderboardEntry {
   totalXp: number;
   achievements: number;
   streak: number;
+}
+
+export interface XPActivity {
+  amount: number;
+  reason?: string;
+  activity_type?: string;
+  created_at: string;
 }
 
 export const XP_VALUES = {

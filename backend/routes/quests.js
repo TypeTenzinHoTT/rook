@@ -58,7 +58,21 @@ export default (pool) => {
       if (!quest.completed) {
         await pool.query('UPDATE daily_quests SET completed=true WHERE id=$1', [questId]);
         const io = req.app.get('io');
-        const result = await applyXp(pool, { userId, amount: quest.xp_reward, reason: quest.title, activityType: 'quest', io });
+        let context = {};
+        if (quest.type === 'daily') {
+          const { rows } = await pool.query(
+            "SELECT COUNT(*) AS remaining FROM daily_quests WHERE user_id=$1 AND type='daily' AND created_at = CURRENT_DATE AND completed=false",
+            [userId]
+          );
+          context = { dailyClearedToday: Number(rows[0]?.remaining || 0) === 0 };
+        } else {
+          const { rows } = await pool.query(
+            "SELECT COUNT(*) AS remaining FROM daily_quests WHERE user_id=$1 AND type IN ('boss','weekly') AND created_at >= date_trunc('week', CURRENT_DATE) AND completed=false",
+            [userId]
+          );
+          context = { weeklyClearedThisWeek: Number(rows[0]?.remaining || 0) === 0 };
+        }
+        const result = await applyXp(pool, { userId, amount: quest.xp_reward, reason: quest.title, activityType: 'quest', io, context });
         await updateWeeklyXpQuest(pool, { userId, increment: quest.xp_reward, io });
         await completeMaintainQuest(pool, { userId, streak: result.streak, io });
       }

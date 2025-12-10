@@ -13,14 +13,19 @@ export default (pool) => {
     const offset = (page - 1) * limit;
     try {
       const { rows } = await pool.query(
-        'SELECT u.username, s.total_xp, s.streak, s.achievements FROM user_stats s JOIN users u ON u.id = s.user_id ORDER BY s.total_xp DESC LIMIT $1 OFFSET $2',
+        `SELECT u.username, s.total_xp, s.streak,
+                COALESCE((SELECT COUNT(*) FROM user_achievements ua WHERE ua.user_id = s.user_id), 0) AS achievements_count
+         FROM user_stats s
+         JOIN users u ON u.id = s.user_id
+         ORDER BY s.total_xp DESC
+         LIMIT $1 OFFSET $2`,
         [limit, offset]
       );
       const payload = rows.map((row, idx) => ({
         rank: offset + idx + 1,
         username: row.username,
         totalXp: row.total_xp,
-        achievements: Array.isArray(row.achievements) ? row.achievements.length : 0,
+        achievements: Number(row.achievements_count) || 0,
         level: calculateLevel(row.total_xp),
         streak: row.streak || 0
       }));
@@ -39,7 +44,9 @@ export default (pool) => {
       ids.push(Number(userId));
       if (!ids.length) return res.json([]);
       const { rows } = await pool.query(
-        `SELECT u.username, s.total_xp, s.streak, s.achievements FROM user_stats s
+        `SELECT u.username, s.total_xp, s.streak,
+                COALESCE((SELECT COUNT(*) FROM user_achievements ua WHERE ua.user_id = s.user_id), 0) AS achievements_count
+         FROM user_stats s
          JOIN users u ON u.id = s.user_id
          WHERE s.user_id = ANY($1)
          ORDER BY s.total_xp DESC`,
@@ -49,7 +56,7 @@ export default (pool) => {
         rank: idx + 1,
         username: row.username,
         totalXp: row.total_xp,
-        achievements: Array.isArray(row.achievements) ? row.achievements.length : 0,
+        achievements: Number(row.achievements_count) || 0,
         level: calculateLevel(row.total_xp),
         streak: row.streak || 0
       }));

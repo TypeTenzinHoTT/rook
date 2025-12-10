@@ -1,9 +1,9 @@
 import chalk from 'chalk';
-import ora from 'ora';
 import Table from 'cli-table3';
 import boxen from 'boxen';
 import { getConfig, isLoggedIn } from '../lib/config.js';
 import { addFriend, getFriends, getFriendsLeaderboard, removeFriend } from '../lib/api.js';
+import { startSpinnerWithSlowNotice, stopSpinner, formatErrorMessage } from '../lib/ui.js';
 
 function guardLogin() {
   if (!isLoggedIn()) {
@@ -13,16 +13,16 @@ function guardLogin() {
 }
 
 async function listFriends(userId: string, username: string) {
-  const spinner = ora('Loading friends...').start();
+  const { spinner, slowTimer } = startSpinnerWithSlowNotice('Loading friends...');
   try {
     const friendsList = await getFriends(userId);
-    spinner.stop();
+    stopSpinner(spinner, slowTimer);
     const table = new Table({ head: ['User', '🔥 Streak'] });
     friendsList.forEach((f: any) => table.push([f.username, f.streak || 0]));
     console.log(boxen(`${chalk.green('Friends')}\n${table.toString()}`, { padding: 1, borderColor: 'cyan' }));
   } catch (err: any) {
-    spinner.fail('Could not load friends');
-    console.error(chalk.red(err?.message || err));
+    stopSpinner(spinner, slowTimer, 'fail', 'Could not load friends');
+    console.error(chalk.red(formatErrorMessage(err)));
   }
 }
 
@@ -31,13 +31,13 @@ async function addFriendFlow(userId: string, friendUsername?: string) {
     console.error(chalk.red('Usage: rook friends add <username>'));
     return;
   }
-  const spinner = ora(`Sending friend request to ${friendUsername}...`).start();
+  const { spinner, slowTimer } = startSpinnerWithSlowNotice(`Sending friend request to ${friendUsername}...`);
   try {
     await addFriend(userId, friendUsername);
-    spinner.succeed('Friend added!');
+    stopSpinner(spinner, slowTimer, 'succeed', 'Friend added!');
   } catch (err: any) {
-    spinner.fail('Could not add friend');
-    console.error(chalk.red(err?.message || err));
+    stopSpinner(spinner, slowTimer, 'fail', 'Could not add friend');
+    console.error(chalk.red(formatErrorMessage(err)));
   }
 }
 
@@ -46,21 +46,21 @@ async function removeFriendFlow(userId: string, friendUsername?: string) {
     console.error(chalk.red('Usage: rook friends remove <username>'));
     return;
   }
-  const spinner = ora(`Removing ${friendUsername}...`).start();
+  const { spinner, slowTimer } = startSpinnerWithSlowNotice(`Removing ${friendUsername}...`);
   try {
     await removeFriend(userId, friendUsername);
-    spinner.succeed('Friend removed.');
+    stopSpinner(spinner, slowTimer, 'succeed', 'Friend removed.');
   } catch (err: any) {
-    spinner.fail('Could not remove friend');
-    console.error(chalk.red(err?.message || err));
+    stopSpinner(spinner, slowTimer, 'fail', 'Could not remove friend');
+    console.error(chalk.red(formatErrorMessage(err)));
   }
 }
 
 async function leaderboardFriends(userId: string, username: string) {
-  const spinner = ora('Loading friends leaderboard...').start();
+  const { spinner, slowTimer } = startSpinnerWithSlowNotice('Loading friends leaderboard...');
   try {
     const entries = await getFriendsLeaderboard(userId);
-    spinner.stop();
+    stopSpinner(spinner, slowTimer);
     const table = new Table({ head: ['Rank', 'User', 'Level', 'XP', '🔥'] });
     entries.forEach((row: any) => {
       const name = row.username === username ? chalk.cyan.bold(row.username + ' (you)') : row.username;
@@ -68,8 +68,8 @@ async function leaderboardFriends(userId: string, username: string) {
     });
     console.log(boxen(`${chalk.green('Friends Leaderboard')}\n${table.toString()}`, { padding: 1, borderColor: 'green' }));
   } catch (err: any) {
-    spinner.fail('Could not load friends leaderboard');
-    console.error(chalk.red(err?.message || err));
+    stopSpinner(spinner, slowTimer, 'fail', 'Could not load friends leaderboard');
+    console.error(chalk.red(formatErrorMessage(err)));
   }
 }
 

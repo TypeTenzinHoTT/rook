@@ -7,6 +7,7 @@ import boxen from 'boxen';
 import { Octokit } from 'octokit';
 import { saveConfig } from '../lib/config.js';
 import { registerUser } from '../lib/api.js';
+import { formatErrorMessage } from '../lib/ui.js';
 function banner() {
     return new Promise((resolve, reject) => {
         figlet.text('Rook', { horizontalLayout: 'default' }, (err, data) => {
@@ -56,7 +57,7 @@ export async function login() {
             `then ${chalk.cyan('rook dungeon')} to slay daily quests.`, { padding: 1, borderColor: 'green' }));
     }
     catch (error) {
-        console.error(chalk.red('Login failed:'), error?.message || error);
+        console.error(chalk.red('Login failed:'), formatErrorMessage(error));
         console.error(chalk.yellow('Tips: ensure your PAT has read:user and repo scopes, and the API URL is reachable.'));
         process.exitCode = 1;
     }

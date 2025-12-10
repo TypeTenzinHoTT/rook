@@ -9,6 +9,7 @@ import questsRoutes from './routes/quests.js';
 import leaderboardRoutes from './routes/leaderboard.js';
 import socialRoutes from './routes/social.js';
 import githubWebhook from './webhooks/github.js';
+import { seedAchievements } from './lib/progression.js';
 
 dotenv.config();
 
@@ -40,6 +41,15 @@ app.use('/api/webhooks/github', githubWebhook(pool));
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
 const port = process.env.PORT || 4000;
-server.listen(port, () => {
-  console.log(`[rook-backend] listening on port ${port}`);
-});
+
+(async () => {
+  try {
+    await seedAchievements(pool);
+    server.listen(port, () => {
+      console.log(`[rook-backend] listening on port ${port}`);
+    });
+  } catch (err) {
+    console.error('Failed to seed achievements', err);
+    process.exit(1);
+  }
+})();

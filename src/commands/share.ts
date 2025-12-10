@@ -1,9 +1,9 @@
 import chalk from 'chalk';
-import ora from 'ora';
 import boxen from 'boxen';
 import { getConfig, isLoggedIn } from '../lib/config.js';
 import { shareAchievement, getUserStats } from '../lib/api.js';
 import { getLevelTitle, xpProgress } from '../lib/xp.js';
+import { startSpinnerWithSlowNotice, stopSpinner, formatErrorMessage } from '../lib/ui.js';
 
 interface ShareOptions {
   twitter?: boolean;
@@ -36,25 +36,26 @@ export async function share(target: string, achievementId?: string, opts: ShareO
     if (!achievementId) {
       console.error(chalk.red('Usage: rook share achievement <id>'));return;
     }
-    const spinner = ora('Forging shareable achievement...').start();
+    const { spinner, slowTimer } = startSpinnerWithSlowNotice('Forging shareable achievement...');
     try {
       const result = await shareAchievement(config.userId, achievementId, platform);
-      spinner.succeed('Achievement ready to share!');
+      stopSpinner(spinner, slowTimer, 'succeed', 'Achievement ready to share!');
       console.log(boxen(`${chalk.green('Share this:')}\n${result.url}`, { padding: 1, borderColor: 'green' }));
     } catch (err: any) {
-      spinner.fail('Could not share achievement');
-      console.error(chalk.red(err?.message || err));
+      stopSpinner(spinner, slowTimer, 'fail', 'Could not share achievement');
+      console.error(chalk.red(formatErrorMessage(err)));
     }
     return;
   }
 
   if (target === 'stats') {
-    const spinner = ora('Gathering your legend...').start();
+    const { spinner, slowTimer } = startSpinnerWithSlowNotice('Gathering your legend...');
     try {
       const stats = await getUserStats(config.userId);
-      spinner.stop();
+      stopSpinner(spinner, slowTimer);
       const progress = xpProgress(stats.totalXp);
       const title = getLevelTitle(progress.level);
+      const shareUrl = `https://rook.gg/placeholder/${config.username}`;
       const ascii = `
 /\\  ROOK //\\
 || Level ${progress.level} ${title}
@@ -62,14 +63,14 @@ export async function share(target: string, achievementId?: string, opts: ShareO
 \\// Achievements ${stats.achievements.length}
 `;
       console.log(
-        boxen(`${chalk.green('Shareable stats ready!')}\nPlatform: ${platform}\n\n${ascii}`, {
+        boxen(`${chalk.green('Shareable stats ready!')}\nPlatform: ${platform}\nLink: ${shareUrl}\n\n${ascii}`, {
           padding: 1,
           borderColor: 'cyan'
         })
       );
     } catch (err: any) {
-      spinner.fail('Could not prepare stats');
-      console.error(chalk.red(err?.message || err));
+      stopSpinner(spinner, slowTimer, 'fail', 'Could not prepare stats');
+      console.error(chalk.red(formatErrorMessage(err)));
     }
     return;
   }

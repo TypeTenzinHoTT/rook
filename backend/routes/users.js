@@ -1,29 +1,9 @@
 import express from 'express';
-
-function calculateLevel(totalXp) {
-  return Math.floor(Math.sqrt(totalXp / 1000)) + 1;
-}
-
-function calculateStreak(lastActive, currentStreak) {
-  const last = new Date(lastActive || new Date());
-  const today = new Date();
-  const startToday = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-  const startLast = Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate());
-  const diffDays = Math.floor((startToday - startLast) / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return currentStreak;
-  if (diffDays === 1) return currentStreak + 1;
-  return 1;
-}
+import { applyXp, calculateLevel, ensureUserStats } from '../lib/progression.js';
+import { completeMaintainQuest, updateWeeklyXpQuest } from '../lib/quests.js';
 
 export default (pool) => {
   const router = express.Router();
-
-  async function ensureUserStats(userId) {
-    const { rows } = await pool.query('SELECT * FROM user_stats WHERE user_id=$1', [userId]);
-    if (!rows.length) {
-      await pool.query('INSERT INTO user_stats (user_id) VALUES ($1)', [userId]);
-    }
-  }
 
   router.post('/register', async (req, res) => {
     const { githubId, username, token } = req.body;
@@ -38,7 +18,7 @@ export default (pool) => {
         const insert = await pool.query('INSERT INTO users (github_id, username, github_token) VALUES ($1,$2,$3) RETURNING id', [githubId, username, token || null]);
         userId = insert.rows[0].id;
       }
-      await ensureUserStats(userId);
+      await ensureUserStats(pool, userId);
       res.json({ userId, username });
     } catch (err) {
       console.error(err);
@@ -49,12 +29,20 @@ export default (pool) => {
   router.get('/:userId/stats', async (req, res) => {
     const { userId } = req.params;
     try {
-      const { rows } = await pool.query(
-        'SELECT u.id as user_id, u.username, s.total_xp, s.streak, s.last_active, s.achievements FROM users u JOIN user_stats s ON u.id = s.user_id WHERE u.id=$1',
+      const baseRes = await pool.query(
+        'SELECT u.id as user_id, u.username, s.total_xp, s.streak, s.last_active FROM users u JOIN user_stats s ON u.id = s.user_id WHERE u.id=$1',
         [userId]
       );
-      if (!rows.length) return res.status(404).json({ error: 'User not found' });
-      const row = rows[0];
+      if (!baseRes.rows.length) return res.status(404).json({ error: 'User not found' });
+      const row = baseRes.rows[0];
+      const { rows: achievementsRows } = await pool.query(
+        `SELECT a.id, a.code, a.name, a.description, a.icon, a.rarity, ua.unlocked_at
+         FROM user_achievements ua
+         JOIN achievements a ON a.id = ua.achievement_id
+         WHERE ua.user_id=$1
+         ORDER BY ua.unlocked_at DESC`,
+        [userId]
+      );
       const level = calculateLevel(row.total_xp || 0);
       res.json({
         userId: row.user_id,
@@ -64,7 +52,14 @@ export default (pool) => {
         totalXp: row.total_xp,
         streak: row.streak,
         lastActive: row.last_active,
-        achievements: row.achievements || []
+        achievements: achievementsRows.map((a) => ({
+          id: a.code || String(a.id),
+          name: a.name,
+          description: a.description,
+          icon: a.icon,
+          rarity: a.rarity,
+          unlockedAt: a.unlocked_at
+        }))
       });
     } catch (err) {
       console.error(err);
@@ -76,16 +71,17 @@ export default (pool) => {
     const { userId } = req.params;
     const { amount = 0, reason = 'activity' } = req.body;
     try {
-      await ensureUserStats(userId);
-      const current = await pool.query('SELECT total_xp, streak, last_active FROM user_stats WHERE user_id=$1', [userId]);
-      const row = current.rows[0];
-      const newTotal = (row.total_xp || 0) + Number(amount);
-      const newStreak = calculateStreak(row.last_active, row.streak || 0);
-      await pool.query('UPDATE user_stats SET total_xp=$1, streak=$2, last_active=NOW() WHERE user_id=$3', [newTotal, newStreak, userId]);
-      await pool.query('INSERT INTO xp_activity (user_id, amount, reason, activity_type) VALUES ($1,$2,$3,$4)', [userId, amount, reason, 'manual']);
       const io = req.app.get('io');
-      io?.emit('leaderboard:update', { userId, totalXp: newTotal, delta: amount });
-      res.json({ totalXp: newTotal, streak: newStreak, level: calculateLevel(newTotal) });
+      const result = await applyXp(pool, {
+        userId,
+        amount,
+        reason,
+        activityType: 'manual',
+        io
+      });
+      await updateWeeklyXpQuest(pool, { userId, increment: amount, io });
+      await completeMaintainQuest(pool, { userId, streak: result.streak, io });
+      res.json(result);
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Failed to award XP' });

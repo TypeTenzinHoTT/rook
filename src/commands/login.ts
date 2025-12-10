@@ -7,6 +7,7 @@ import boxen from 'boxen';
 import { Octokit } from 'octokit';
 import { saveConfig } from '../lib/config.js';
 import { registerUser } from '../lib/api.js';
+import { formatErrorMessage } from '../lib/ui.js';
 
 function banner(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -69,7 +70,7 @@ export async function login() {
       )
     );
   } catch (error: any) {
-    console.error(chalk.red('Login failed:'), error?.message || error);
+    console.error(chalk.red('Login failed:'), formatErrorMessage(error));
     console.error(chalk.yellow('Tips: ensure your PAT has read:user and repo scopes, and the API URL is reachable.'));
     process.exitCode = 1;
   }

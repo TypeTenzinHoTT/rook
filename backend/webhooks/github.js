@@ -1,5 +1,7 @@
 import express from 'express';
 import crypto from 'crypto';
+import { applyXp } from '../lib/progression.js';
+import { updateQuestProgress, completeMaintainQuest, updateWeeklyXpQuest } from '../lib/quests.js';
 
 const XP = {
   COMMIT: 50,
@@ -24,15 +26,18 @@ export default (pool) => {
     return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest));
   }
 
-  async function awardXp(userId, amount, reason, activityType, io) {
-    await pool.query('UPDATE user_stats SET total_xp = total_xp + $1 WHERE user_id=$2', [amount, userId]);
-    await pool.query('INSERT INTO xp_activity (user_id, amount, reason, activity_type) VALUES ($1,$2,$3,$4)', [userId, amount, reason, activityType]);
-    io?.emit('leaderboard:update', { userId, delta: amount });
-  }
-
   async function findUserIdByGitHubId(githubId) {
     const { rows } = await pool.query('SELECT id FROM users WHERE github_id=$1', [String(githubId)]);
     return rows[0]?.id;
+  }
+
+  async function handleXpAndStreak(userId, amount, reason, activityType, io) {
+    const result = await applyXp(pool, { userId, amount, reason, activityType, io });
+    await completeMaintainQuest(pool, { userId, streak: result.streak, io });
+    if (amount) {
+      await updateWeeklyXpQuest(pool, { userId, increment: amount, io });
+    }
+    return result;
   }
 
   router.post('/', async (req, res) => {
@@ -46,18 +51,40 @@ export default (pool) => {
       if (!userId) {
         return res.json({ status: 'ignored' });
       }
+
       if (event === 'push') {
-        const commitCount = payload.commits?.length || 0;
+        const commitCount = Array.isArray(payload?.commits) ? payload.commits.length : 0;
         const xp = commitCount * XP.COMMIT;
-        if (xp) await awardXp(userId, xp, 'GitHub commits', 'commit', io);
+        if (xp) await handleXpAndStreak(userId, xp, 'GitHub commits', 'commit', io);
+        if (commitCount) {
+          await updateQuestProgress(pool, { userId, title: 'Make 3 commits', increment: commitCount, type: 'daily', io, trackXpReward: true });
+          await updateQuestProgress(pool, { userId, title: 'Make 20 commits this week', increment: commitCount, type: 'weekly', io, trackXpReward: true });
+        }
       } else if (event === 'pull_request') {
-        if (payload.action === 'opened') await awardXp(userId, XP.PR_CREATED, 'Opened PR', 'pr', io);
-        if (payload.action === 'closed' && payload.pull_request?.merged) await awardXp(userId, XP.PR_MERGED, 'Merged PR', 'pr', io);
+        const action = payload?.action;
+        if (action === 'opened') {
+          await handleXpAndStreak(userId, XP.PR_CREATED, 'Opened PR', 'pr', io);
+          await updateQuestProgress(pool, { userId, title: 'Open 1 PR', increment: 1, type: 'daily', io, trackXpReward: true });
+        }
+        if (action === 'closed' && payload?.pull_request?.merged) {
+          await handleXpAndStreak(userId, XP.PR_MERGED, 'Merged PR', 'pr', io);
+          await updateQuestProgress(pool, { userId, title: 'Merge 3 PRs this week', increment: 1, type: 'weekly', io, trackXpReward: true });
+        }
       } else if (event === 'issues') {
-        if (payload.action === 'opened') await awardXp(userId, XP.ISSUE_CREATED, 'Opened issue', 'issue', io);
-        if (payload.action === 'closed') await awardXp(userId, XP.ISSUE_CLOSED, 'Closed issue', 'issue', io);
+        const action = payload?.action;
+        if (action === 'opened') {
+          await handleXpAndStreak(userId, XP.ISSUE_CREATED, 'Opened issue', 'issue', io);
+        }
+        if (action === 'closed') {
+          await handleXpAndStreak(userId, XP.ISSUE_CLOSED, 'Closed issue', 'issue', io);
+          await updateQuestProgress(pool, { userId, title: 'Close 1 issue', increment: 1, type: 'daily', io, trackXpReward: true });
+        }
       } else if (event === 'pull_request_review') {
-        if (payload.action === 'submitted') await awardXp(userId, XP.PR_REVIEWED, 'Reviewed PR', 'review', io);
+        const action = payload?.action;
+        if (action === 'submitted') {
+          await handleXpAndStreak(userId, XP.PR_REVIEWED, 'Reviewed PR', 'review', io);
+          await updateQuestProgress(pool, { userId, title: 'Review 2 PRs', increment: 1, type: 'daily', io, trackXpReward: true });
+        }
       }
       res.json({ status: 'ok' });
     } catch (err) {

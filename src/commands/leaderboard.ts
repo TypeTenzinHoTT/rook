@@ -1,11 +1,11 @@
 import chalk from 'chalk';
-import ora from 'ora';
 import Table from 'cli-table3';
 import boxen from 'boxen';
 import { io as socketClient } from 'socket.io-client';
 import { getConfig, isLoggedIn } from '../lib/config.js';
 import { getFriendsLeaderboard, getGlobalLeaderboard } from '../lib/api.js';
 import { LeaderboardEntry } from '../types/index.js';
+import { startSpinnerWithSlowNotice, stopSpinner, formatErrorMessage } from '../lib/ui.js';
 
 function guardLogin() {
   if (!isLoggedIn()) {
@@ -39,12 +39,14 @@ export async function leaderboard(opts: LeaderboardOptions) {
   const page = Number(opts.page || 1) || 1;
 
   async function render(showSpinner = true) {
-    const spinner = showSpinner ? ora('Fetching leaderboard...').start() : null;
+    const spinObj = showSpinner ? startSpinnerWithSlowNotice('Fetching leaderboard...') : null;
+    const spinner = spinObj?.spinner || null;
+    const slowTimer = spinObj?.slowTimer || null;
     try {
       const entries = opts.friends
         ? await getFriendsLeaderboard(config.userId)
         : await getGlobalLeaderboard(limit, page);
-      spinner?.stop();
+      if (spinner) stopSpinner(spinner, slowTimer || null);
 
       const title = opts.friends ? 'Friends Leaderboard' : 'Global Leaderboard';
       const table = buildTable(entries, config.username);
@@ -56,8 +58,8 @@ export async function leaderboard(opts: LeaderboardOptions) {
         })
       );
     } catch (err: any) {
-      spinner?.fail('Could not load leaderboard');
-      console.error(chalk.red(err?.message || err));
+      if (spinner) stopSpinner(spinner, slowTimer || null, 'fail', 'Could not load leaderboard');
+      console.error(chalk.red(formatErrorMessage(err)));
     }
   }
 
@@ -66,6 +68,7 @@ export async function leaderboard(opts: LeaderboardOptions) {
   if (opts.watch) {
     console.log(chalk.gray('Watching leaderboard (Ctrl+C to stop)...'));
     let fallbackInterval: NodeJS.Timer | null = null;
+    let notified = false;
     const baseUrl = (config.apiUrl || '').replace(/\/?api\/?$/, '');
     if (baseUrl) {
       const socket = socketClient(baseUrl, { transports: ['websocket', 'polling'] });
@@ -73,6 +76,10 @@ export async function leaderboard(opts: LeaderboardOptions) {
       socket.on('leaderboard:update', () => render(false));
       socket.on('connect_error', () => {
         if (!fallbackInterval) {
+          if (!notified) {
+            console.log(chalk.gray('Realtime connection failed, falling back to polling... (server may be waking)'));
+            notified = true;
+          }
           fallbackInterval = setInterval(() => render(false), 5000);
         }
       });

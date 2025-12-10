@@ -19,8 +19,13 @@ export function calculateStreakUtc(lastActive, currentStreak) {
 const ACHIEVEMENTS = [
   { code: 'FIRST_BLOOD', name: 'First Blood', description: 'Earn your first XP.', icon: '🩸', rarity: 'common' },
   { code: 'STREAK_3', name: 'On a Roll', description: 'Maintain a 3-day streak.', icon: '🔥', rarity: 'rare' },
-  { code: 'STREAK_7', name: 'Streak Master', description: 'Maintain a 7-day streak.', icon: '🔥', rarity: 'epic' },
-  { code: 'XP_1000', name: 'Grinding Hard', description: 'Reach 1000 total XP.', icon: '💪', rarity: 'epic' }
+  { code: 'STREAK_7', name: 'Streak Master', description: 'Maintain a 7-day streak.', icon: '🔥', rarity: 'rare' },
+  { code: 'STREAK_14', name: 'Two-Week Titan', description: 'Maintain a 14-day streak.', icon: '⚡', rarity: 'rare' },
+  { code: 'STREAK_30', name: 'Marathon Coder', description: 'Maintain a 30-day streak.', icon: '🐉', rarity: 'epic' },
+  { code: 'XP_1000', name: 'Grinding Hard', description: 'Reach 1000 total XP.', icon: '💪', rarity: 'rare' },
+  { code: 'XP_5000', name: 'XP Juggernaut', description: 'Reach 5000 total XP.', icon: '🏆', rarity: 'epic' },
+  { code: 'DAILY_SLAYER', name: 'Daily Slayer', description: 'Complete all daily quests in a day.', icon: '🗡️', rarity: 'epic' },
+  { code: 'BOSS_HUNTER', name: 'Boss Hunter', description: 'Clear all weekly quests in a week.', icon: '👑', rarity: 'legendary' }
 ];
 
 const achievementCache = new Map();
@@ -61,18 +66,23 @@ async function unlockAchievement(pool, userId, achievement) {
   };
 }
 
-function shouldUnlock(code, prevTotal, newTotal, newStreak) {
-  if (code === 'FIRST_BLOOD') return newTotal > 0;
+function shouldUnlock(code, prevTotal, newTotal, newStreak, context = {}) {
+  if (code === 'FIRST_BLOOD') return (prevTotal || 0) === 0 && newTotal > 0;
   if (code === 'STREAK_3') return newStreak >= 3;
   if (code === 'STREAK_7') return newStreak >= 7;
+  if (code === 'STREAK_14') return newStreak >= 14;
+  if (code === 'STREAK_30') return newStreak >= 30;
   if (code === 'XP_1000') return newTotal >= 1000;
+  if (code === 'XP_5000') return newTotal >= 5000;
+  if (code === 'DAILY_SLAYER') return Boolean(context.dailyClearedToday);
+  if (code === 'BOSS_HUNTER') return Boolean(context.weeklyClearedThisWeek);
   return false;
 }
 
-export async function checkAndUnlockAchievements(pool, userId, prevTotal, newTotal, newStreak) {
+export async function checkAndUnlockAchievements(pool, userId, prevTotal, newTotal, newStreak, context = {}) {
   const unlocked = [];
   for (const item of ACHIEVEMENTS) {
-    if (!shouldUnlock(item.code, prevTotal, newTotal, newStreak)) continue;
+    if (!shouldUnlock(item.code, prevTotal, newTotal, newStreak, context)) continue;
     const ach = await getAchievement(pool, item.code);
     if (!ach) continue;
     const result = await unlockAchievement(pool, userId, ach);
@@ -88,7 +98,7 @@ export async function ensureUserStats(pool, userId) {
   }
 }
 
-export async function applyXp(pool, { userId, amount, reason, activityType, io }) {
+export async function applyXp(pool, { userId, amount, reason, activityType, io, context = {} }) {
   await ensureUserStats(pool, userId);
   const currentRes = await pool.query('SELECT total_xp, streak, last_active FROM user_stats WHERE user_id=$1', [userId]);
   const row = currentRes.rows[0] || { total_xp: 0, streak: 0, last_active: null };
@@ -104,7 +114,7 @@ export async function applyXp(pool, { userId, amount, reason, activityType, io }
     activityType
   ]);
 
-  const unlocked = await checkAndUnlockAchievements(pool, userId, row.total_xp || 0, newTotal, newStreak);
+  const unlocked = await checkAndUnlockAchievements(pool, userId, row.total_xp || 0, newTotal, newStreak, context);
 
   io?.emit('leaderboard:update', { userId, totalXp: newTotal, delta: amount });
 

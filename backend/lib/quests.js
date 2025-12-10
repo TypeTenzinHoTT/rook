@@ -62,6 +62,22 @@ async function fetchQuest(pool, userId, title, type) {
   return rows[0];
 }
 
+async function isDailyBoardCleared(pool, userId) {
+  const { rows } = await pool.query(
+    "SELECT COUNT(*) AS remaining FROM daily_quests WHERE user_id=$1 AND type='daily' AND created_at = CURRENT_DATE AND completed=false",
+    [userId]
+  );
+  return Number(rows[0]?.remaining || 0) === 0;
+}
+
+async function isWeeklyBoardCleared(pool, userId) {
+  const { rows } = await pool.query(
+    "SELECT COUNT(*) AS remaining FROM daily_quests WHERE user_id=$1 AND type IN ('boss','weekly') AND created_at >= date_trunc('week', CURRENT_DATE) AND completed=false",
+    [userId]
+  );
+  return Number(rows[0]?.remaining || 0) === 0;
+}
+
 export async function updateQuestProgress(pool, { userId, title, increment = 1, type = 'daily', io, trackXpReward = false }) {
   await ensureUserStats(pool, userId);
   if (type === 'daily') {
@@ -80,12 +96,19 @@ export async function updateQuestProgress(pool, { userId, title, increment = 1, 
 
   if (newProgress >= quest.progress_total && !quest.completed) {
     await pool.query('UPDATE daily_quests SET completed=true WHERE id=$1', [quest.id]);
+    let context = {};
+    if (type === 'daily') {
+      context.dailyClearedToday = await isDailyBoardCleared(pool, userId);
+    } else {
+      context.weeklyClearedThisWeek = await isWeeklyBoardCleared(pool, userId);
+    }
     const result = await applyXp(pool, {
       userId,
       amount: quest.xp_reward,
       reason: quest.title,
       activityType: 'quest',
-      io
+      io,
+      context
     });
     if (trackXpReward && title !== 'Earn 1000 XP this week') {
       await updateWeeklyXpQuest(pool, { userId, increment: quest.xp_reward, io });
@@ -102,7 +125,8 @@ export async function completeMaintainQuest(pool, { userId, streak, io }) {
   const quest = await fetchQuest(pool, userId, 'Maintain your streak', 'daily');
   if (!quest || quest.completed) return;
   await pool.query('UPDATE daily_quests SET progress_current=$1, completed=true WHERE id=$2', [1, quest.id]);
-  await applyXp(pool, { userId, amount: quest.xp_reward, reason: quest.title, activityType: 'quest', io });
+  const context = { dailyClearedToday: await isDailyBoardCleared(pool, userId) };
+  await applyXp(pool, { userId, amount: quest.xp_reward, reason: quest.title, activityType: 'quest', io, context });
 }
 
 export async function updateWeeklyXpQuest(pool, { userId, increment, io }) {

@@ -59,3 +59,4 @@ A gamified CLI that turns daily developer work into an RPG loop. Track XP from G
 another test
 // test
 // achievement test
+// trigger achievement

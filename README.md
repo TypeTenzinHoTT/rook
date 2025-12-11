@@ -4,7 +4,7 @@ A gamified CLI that turns daily developer work into an RPG loop. Track XP from G
 
 ## Quickstart
 1. Install deps: `npm install`
-2. Dev run CLI: `npm run dev -- <command>` (example: `npm run dev -- login`)
+2. Dev run CLI: `npm run dev -- rook` 
 3. Build: `npm run build`
 4. Link locally: `npm link` then run `rook <command>`
 

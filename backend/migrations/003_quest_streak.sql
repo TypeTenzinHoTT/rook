@@ -1,0 +1,3 @@
+ALTER TABLE user_stats
+  ADD COLUMN IF NOT EXISTS quest_streak INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS last_quest_completed DATE;

@@ -45,12 +45,32 @@ export async function stats() {
         const streakLine = data.streak > 0
             ? `${chalk.red('🔥 Streak:')} ${data.streak} days ${chalk.gray('(keep it alive until UTC midnight)')}`
             : `${chalk.gray('No streak yet — earn XP today to start your flame.')}`;
+        const questStreakLine = data.questStreak && data.questStreak > 0
+            ? `${chalk.red('🔥 Quest Streak:')} ${data.questStreak} days ${data.questStreakBonus ? chalk.gray('(' + data.questStreakBonus + ')') : ''}`
+            : chalk.gray('Complete all daily quests to start a quest streak.');
+        const craftingLine = data.crafting
+            ? `${chalk.magenta('🛠️ Crafting Level:')} ${data.crafting.level || data.craftingLevel || 1} (${data.crafting.xp || data.craftingXp || 0} XP)`
+            : '';
+        const craftingPerks = data.crafting?.perks?.length ? `Perks: ${data.crafting.perks.join(', ')}` : '';
+        const luckLine = `${chalk.green('🍀 Luck Meter:')} ${data.luckMeter || 0}${data.luckMeter ? chalk.gray(` (+${((data.luckMeter || 0) * 0.5).toFixed(1)}% rare drop chance)`) : ''}`;
+        const guildName = typeof data.guild === 'string' ? data.guild : data.guild?.name;
+        const guildBonus = typeof data.guild === 'object' && data.guild ? data.guild.bonus : 0;
+        const guildLine = data.guild ? `${chalk.cyan('🏰 Guild:')} ${guildName || 'Guild'} — +${Math.round((guildBonus || 0) * 100)}% XP` : '';
+        const prestigeLine = data.prestige && typeof data.prestige.count === 'number'
+            ? `${chalk.yellow('🏅 Prestige:')} ${data.prestige.count} ${chalk.gray('(' + (data.prestige.perkSummary || '') + ')')}`
+            : '';
         const header = gradient.rainbow.multiline(` ${config.username} `);
         const lines = [
             `${chalk.cyan('Level')} ${progress.level} ${chalk.gray('(' + title + ')')}`,
             `${progressBar(progress.current, progress.needed)} ${progress.percentage}%`,
             `${chalk.yellow('Total XP:')} ${data.totalXp}`,
             streakLine,
+            questStreakLine,
+            guildLine,
+            prestigeLine,
+            craftingLine,
+            craftingPerks,
+            luckLine,
             `${chalk.green('Achievements:')} ${achievements.length}`,
             '',
             chalk.bold('Recent achievements:'),
@@ -68,7 +88,14 @@ export async function stats() {
                 ? loot
                     .map((l) => `${chalk.green('+1')} ${l.icon || '🎁'} ${chalk.white(l.name)} ${chalk.gray('(now x' + (l.quantity || 1) + ')')}`)
                     .join('\n')
-                : 'No loot drops yet. Earn XP to get rewards!'
+                : 'No loot drops yet. Earn XP to get rewards!',
+            '',
+            chalk.bold('PR Battles:'),
+            data.prBattles && data.prBattles.length
+                ? data.prBattles
+                    .map((b) => `- vs ${b.opponent} — ${b.status || 'pending'}`)
+                    .join('\n')
+                : chalk.gray('No battles at the moment.')
         ];
         console.log(boxen(`${header}\n\n${lines.join('\n')}`, {
             padding: 1,

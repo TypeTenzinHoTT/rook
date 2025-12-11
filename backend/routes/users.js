@@ -1,8 +1,14 @@
 import express from 'express';
-import { applyXp, calculateLevel, ensureUserStats } from '../lib/progression.js';
+import { calculateLevel, ensureUserStats } from '../lib/progression.js';
 import { completeMaintainQuest, updateWeeklyXpQuest } from '../lib/quests.js';
 import { generateCoachTip } from '../lib/coach.js';
 import { getCraftingRecipes } from '../lib/crafting.js';
+import { applyXpWithBonuses } from '../lib/xpEvents.js';
+import { getQuestStreak } from '../lib/questStreak.js';
+import { listUserBattles } from '../lib/prBattles.js';
+import { getCraftingSkill, formatCraftingPerks } from '../lib/craftingSkill.js';
+import { getGuildSummary } from '../lib/guilds.js';
+import { getPrestigeSummary, performPrestige } from '../lib/prestige.js';
 
 export default (pool) => {
   const router = express.Router();
@@ -32,7 +38,9 @@ export default (pool) => {
     const { userId } = req.params;
     try {
       const baseRes = await pool.query(
-        'SELECT u.id as user_id, u.username, s.total_xp, s.streak, s.last_active FROM users u JOIN user_stats s ON u.id = s.user_id WHERE u.id=$1',
+        `SELECT u.id as user_id, u.username, s.total_xp, s.streak, s.last_active,
+                s.quest_streak, s.last_quest_completed, s.crafting_xp, s.crafting_level, s.luck_meter, s.guild_id
+         FROM users u JOIN user_stats s ON u.id = s.user_id WHERE u.id=$1`,
         [userId]
       );
       if (!baseRes.rows.length) return res.status(404).json({ error: 'User not found' });
@@ -60,6 +68,11 @@ export default (pool) => {
       const coachTip = await generateCoachTip({ pool, userId, username: row.username });
       const craftingRecipes = await getCraftingRecipes(pool);
       const level = calculateLevel(row.total_xp || 0);
+      const questStreakData = await getQuestStreak(pool, userId);
+      const prBattles = await listUserBattles(pool, userId);
+      const craftingSkill = await getCraftingSkill(pool, userId);
+      const guild = await getGuildSummary(pool, userId);
+      const prestige = await getPrestigeSummary(pool, userId);
       res.json({
         userId: row.user_id,
         username: row.username,
@@ -68,6 +81,8 @@ export default (pool) => {
         totalXp: row.total_xp,
         streak: row.streak,
         lastActive: row.last_active,
+        questStreak: questStreakData.questStreak,
+        questStreakBonus: questStreakData.questStreakBonus,
         achievements: achievementsRows.map((a) => ({
           id: a.code || String(a.id),
           name: a.name,
@@ -87,7 +102,16 @@ export default (pool) => {
           quantity: l.quantity,
           createdAt: l.created_at
         })),
-        craftingRecipes
+        craftingRecipes,
+        crafting: {
+          level: craftingSkill.level,
+          xp: craftingSkill.xp,
+          perks: formatCraftingPerks(craftingSkill.perks)
+        },
+        luckMeter: row.luck_meter || 0,
+        prBattles,
+        guild,
+        prestige
       });
     } catch (err) {
       console.error(err);
@@ -100,14 +124,14 @@ export default (pool) => {
     const { amount = 0, reason = 'activity' } = req.body;
     try {
       const io = req.app.get('io');
-      const result = await applyXp(pool, {
+      const result = await applyXpWithBonuses(pool, {
         userId,
         amount,
         reason,
         activityType: 'manual',
         io
       });
-      await updateWeeklyXpQuest(pool, { userId, increment: amount, io });
+      await updateWeeklyXpQuest(pool, { userId, increment: result.appliedXp || amount, io });
       await completeMaintainQuest(pool, { userId, streak: result.streak, io });
       res.json(result);
     } catch (err) {
@@ -175,6 +199,19 @@ export default (pool) => {
     const { platform = 'link' } = req.body || {};
     const url = `https://rook.gg/share/${userId}/${achievementId}?platform=${platform}`;
     res.json({ url });
+  });
+
+  router.post('/:userId/prestige', async (req, res) => {
+    const { userId } = req.params;
+    const { level } = req.body || {};
+    try {
+      const result = await performPrestige(pool, { userId, level });
+      if (result.error) return res.status(400).json({ error: result.error });
+      res.json(result);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to prestige' });
+    }
   });
 
   return router;

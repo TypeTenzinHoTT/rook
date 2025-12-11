@@ -1,0 +1,2 @@
+ALTER TABLE user_stats
+  ADD COLUMN IF NOT EXISTS luck_meter INTEGER DEFAULT 0;

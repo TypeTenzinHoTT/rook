@@ -78,3 +78,13 @@ export async function getRecentActivity(userId, limit = 5) {
     const { data } = await client.get(`/users/${userId}/activity`, { params: { limit } });
     return data;
 }
+export async function getXpHistory(userId, limit = 20) {
+    const client = createClient();
+    const { data } = await client.get(`/users/${userId}/xp`, { params: { limit } });
+    return data;
+}
+export async function connectWebhook(repoFullName, token) {
+    const client = createClient();
+    const { data } = await client.post(`/github/webhooks`, { repoFullName, token });
+    return data;
+}

@@ -5,6 +5,19 @@ function getClient() {
     const token = getConfig()?.token || process.env.GITHUB_TOKEN;
     return new Octokit({ auth: token });
 }
+export async function listManageableRepos() {
+    const client = getClient();
+    const repos = [];
+    let page = 1;
+    while (page <= 3) { // cap to avoid long runs; fetch up to 300 repos
+        const { data } = await client.rest.repos.listForAuthenticatedUser({ per_page: 100, page, affiliation: 'owner,collaborator,organization_member' });
+        repos.push(...data.filter((r) => r.permissions?.admin || r.permissions?.push));
+        if (data.length < 100)
+            break;
+        page += 1;
+    }
+    return repos;
+}
 export async function getRecentCommits(username, since) {
     const client = getClient();
     const { data } = await client.request('GET /search/commits', {

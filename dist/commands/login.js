@@ -8,6 +8,7 @@ import { Octokit } from 'octokit';
 import { saveConfig } from '../lib/config.js';
 import { registerUser } from '../lib/api.js';
 import { formatErrorMessage } from '../lib/ui.js';
+import { connect } from './connect.js';
 function banner() {
     return new Promise((resolve, reject) => {
         figlet.text('Rook', { horizontalLayout: 'default' }, (err, data) => {
@@ -55,6 +56,17 @@ export async function login() {
             `Hello ${gradient.pastel(user.login)}!\n` +
             `Next up: run ${chalk.cyan('rook stats')} to view your profile, ` +
             `then ${chalk.cyan('rook dungeon')} to slay daily quests.`, { padding: 1, borderColor: 'green' }));
+        const { connectNow } = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'connectNow',
+                message: 'Do you want to connect GitHub repos to Rook now?',
+                default: false
+            }
+        ]);
+        if (connectNow) {
+            await connect();
+        }
     }
     catch (error) {
         console.error(chalk.red('Login failed:'), formatErrorMessage(error));

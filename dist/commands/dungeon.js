@@ -40,7 +40,13 @@ export async function dungeon() {
         daily.forEach((q) => dailyTable.push(formatQuestRow(q)));
         const weeklyTable = new Table({ head: [' ', chalk.magenta('Boss Quest'), 'Reward', 'Progress'] });
         weekly.forEach((q) => weeklyTable.push(formatQuestRow(q)));
-        console.log(boxen(`${chalk.yellow('🗡️ Daily Quests')} (${timeUntilReset()})\n${dailyTable.toString()}\n\n${chalk.magenta('⚔️ Weekly Bosses')}\n${weeklyTable.toString()}\n\n${chalk.gray('Progress auto-updates from your GitHub pushes, PRs, reviews, and issues.')}`, {
+        const dailyComplete = daily.filter((q) => q.completed).length;
+        const dailyMsg = dailyComplete === 0
+            ? chalk.gray("You haven't started today's run yet — a single commit can kick this off.")
+            : dailyComplete < daily.length
+                ? chalk.yellow("You're mid-run — finish those remaining quests for max XP.")
+                : chalk.green('Daily board cleared! Come back tomorrow to keep your streak alive.');
+        console.log(boxen(`${chalk.yellow('🗡️ Daily Quests')} (${timeUntilReset()})\n${dailyTable.toString()}\n\n${chalk.magenta('⚔️ Weekly Bosses')}\n${weeklyTable.toString()}\n\n${chalk.gray('Progress auto-updates from your GitHub pushes, PRs, reviews, and issues.')}\n${dailyMsg}`, {
             padding: 1,
             borderColor: 'yellow'
         }));

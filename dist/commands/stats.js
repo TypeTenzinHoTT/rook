@@ -36,7 +36,7 @@ export async function stats() {
     const { spinner, slowTimer } = startSpinnerWithSlowNotice('Summoning your hero sheet...');
     try {
         const data = await getUserStats(config.userId);
-        const activity = await getRecentActivity(config.userId, 5);
+        const activity = data.recentActivity || (await getRecentActivity(config.userId, 5));
         stopSpinner(spinner, slowTimer);
         const progress = xpProgress(data.totalXp);
         const title = getLevelTitle(progress.level);
@@ -67,6 +67,9 @@ export async function stats() {
             borderColor: 'cyan',
             title: `${chalk.blue('📊 Stats')}`
         }));
+        if (data.coachTip) {
+            console.log(chalk.magenta(`Coach says: ${data.coachTip}`));
+        }
     }
     catch (err) {
         stopSpinner(spinner, slowTimer, 'fail', 'Could not fetch stats');

@@ -74,3 +74,4 @@ another test
 // streak test
 // quest test
 // rook connect test
+# Quests table added! 🎮

@@ -5,6 +5,7 @@ import { getConfig, isLoggedIn } from '../lib/config.js';
 import { connectWebhook } from '../lib/api.js';
 import { listManageableRepos } from '../lib/github.js';
 import { startSpinnerWithSlowNotice, stopSpinner, formatErrorMessage } from '../lib/ui.js';
+import { Octokit } from 'octokit';
 
 function guardLogin() {
   if (!isLoggedIn()) {
@@ -27,8 +28,26 @@ export async function connect() {
       return;
     }
 
+    const octokit = new Octokit({ auth: config.token });
+    const baseUrl = (config.apiUrl || '').replace(/\/?api\/?$/, '/api/webhooks/github');
+
+    async function isConnected(fullName: string) {
+      const [owner, repo] = fullName.split('/');
+      try {
+        const { data } = await octokit.rest.repos.listWebhooks({ owner, repo, per_page: 50 });
+        return data.some((h) => h.config?.url === baseUrl);
+      } catch {
+        return false;
+      }
+    }
+
+    const connectedStatus: Record<string, boolean> = {};
+    for (const r of repos.slice(0, 20)) {
+      connectedStatus[r.full_name] = await isConnected(r.full_name);
+    }
+
     const choices = repos.map((r) => ({
-      name: `${r.full_name}${r.description ? ' — ' + r.description.slice(0, 60) : ''}`,
+      name: `${connectedStatus[r.full_name] ? '✓ ' : ''}${r.full_name}${r.description ? ' — ' + r.description.slice(0, 60) : ''}`,
       value: r.full_name
     }));
 
@@ -67,6 +86,7 @@ ${successes.join(', ')}`, {
           borderColor: 'green'
         })
       );
+      console.log(chalk.green('\n🎉 Webhooks active! Your commits will now generate XP, loot, and crafting materials automatically.'));
     }
   } catch (err: any) {
     stopSpinner(fetchSpin.spinner, fetchSpin.slowTimer, 'fail', 'Could not fetch repos');

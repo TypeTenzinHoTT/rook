@@ -9,6 +9,8 @@ import { share } from './commands/share.js';
 import { connect } from './commands/connect.js';
 import { history } from './commands/history.js';
 import { inventory } from './commands/inventory.js';
+import { craft } from './commands/craft.js';
+import { init } from './commands/init.js';
 
 const program = new Command();
 
@@ -32,5 +34,7 @@ program.command('share').description('Share stats or an achievement').argument('
 program.command('connect').description('Connect GitHub repos to auto-configure webhooks').action(connect);
 program.command('history').description('View your XP history').action(history);
 program.command('inventory').description('View your loot inventory').action(inventory);
+program.command('craft').description('Craft items from your loot').action(craft);
+program.command('init').description('Initialize Rook: login + connect repos').action(init);
 
 program.parse();

@@ -12,6 +12,8 @@ import githubWebhook from './webhooks/github.js';
 import { seedAchievements } from './lib/progression.js';
 import githubRoutes from './routes/github.js';
 import { seedLootItems } from './lib/loot.js';
+import craftingRoutes from './routes/crafting.js';
+import { seedCraftingRecipes } from './lib/crafting.js';
 
 dotenv.config();
 
@@ -40,6 +42,7 @@ app.use('/api', leaderboardRoutes(pool));
 app.use('/api/users', socialRoutes(pool));
 app.use('/api/webhooks/github', githubWebhook(pool));
 app.use('/api', githubRoutes(pool));
+app.use('/api/crafting', craftingRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
@@ -49,6 +52,8 @@ const port = process.env.PORT || 4000;
   try {
     await seedAchievements(pool);
     await seedLootItems(pool);
+    await seedCraftingRecipes(pool);
+    console.log('✓ Crafting recipes seeded');
     server.listen(port, () => {
       console.log(`[rook-backend] listening on port ${port}`);
     });

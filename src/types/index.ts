@@ -19,6 +19,7 @@ export interface UserStats {
   guild?: string;
   recentActivity?: XPActivity[];
   recentLoot?: LootDrop[];
+  craftingRecipes?: CraftingRecipe[];
 }
 
 export interface Achievement {
@@ -68,6 +69,24 @@ export interface LootItem {
 }
 
 export type LootDrop = LootItem;
+
+export interface CraftingRecipe {
+  code: string;
+  name: string;
+  description: string;
+  ingredients: {
+    itemId: number;
+    code: string;
+    name: string;
+    qty: number;
+  }[];
+  result: {
+    itemId: number;
+    code: string;
+    name: string;
+    icon: string;
+  };
+}
 
 export const XP_VALUES = {
   COMMIT: 50,

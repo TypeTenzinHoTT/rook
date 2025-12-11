@@ -5,7 +5,7 @@ import { getConfig, isLoggedIn } from '../lib/config.js';
 import { getDailyQuests, getWeeklyQuests } from '../lib/api.js';
 import { progressBar } from '../lib/xp.js';
 import { Quest } from '../types/index.js';
-import { startSpinnerWithSlowNotice, stopSpinner, formatErrorMessage } from '../lib/ui.js';
+import { startSpinnerWithSlowNotice, stopSpinner, formatErrorMessage, maybeShowTip } from '../lib/ui.js';
 
 function guardLogin() {
   if (!isLoggedIn()) {
@@ -70,5 +70,7 @@ export async function dungeon() {
   } catch (err: any) {
     stopSpinner(spinner, slowTimer, 'fail', 'Could not load quests');
     console.error(chalk.red(formatErrorMessage(err)));
+  } finally {
+    maybeShowTip();
   }
 }

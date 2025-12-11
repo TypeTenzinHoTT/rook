@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import Table from 'cli-table3';
 import { getConfig, isLoggedIn } from '../lib/config.js';
 import { getInventory } from '../lib/api.js';
-import { startSpinnerWithSlowNotice, stopSpinner, formatErrorMessage } from '../lib/ui.js';
+import { startSpinnerWithSlowNotice, stopSpinner, formatErrorMessage, maybeShowTip } from '../lib/ui.js';
 
 function guardLogin() {
   if (!isLoggedIn()) {
@@ -41,5 +41,7 @@ export async function inventory() {
   } catch (err: any) {
     stopSpinner(spin.spinner, spin.slowTimer, 'fail', 'Could not load inventory');
     console.error(chalk.red(formatErrorMessage(err)));
+  } finally {
+    maybeShowTip();
   }
 }

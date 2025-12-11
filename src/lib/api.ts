@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { getConfig } from './config.js';
-import { Achievement, LeaderboardEntry, Quest, UserStats, XPActivity, LootItem } from '../types/index.js';
+import { Achievement, LeaderboardEntry, Quest, UserStats, XPActivity, LootItem, CraftingRecipe } from '../types/index.js';
 
 function createClient(): AxiosInstance {
   const config = getConfig();
@@ -110,4 +110,17 @@ export async function getInventory(userId: string): Promise<LootItem[]> {
   const client = createClient();
   const { data } = await client.get(`/users/${userId}/loot`);
   return data.inventory || [];
+}
+
+export async function getCraftingRecipes(): Promise<CraftingRecipe[]> {
+  const stats = await getUserStats(getConfig()?.userId || '');
+  return stats.craftingRecipes || [];
+}
+
+export async function craft(recipeCode: string) {
+  const config = getConfig();
+  if (!config) throw new Error('Not logged in');
+  const client = createClient();
+  const { data } = await client.post(`/crafting/${config.userId}/craft/${recipeCode}`);
+  return data;
 }

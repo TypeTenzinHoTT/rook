@@ -1,4 +1,5 @@
 import ora from 'ora';
+import chalk from 'chalk';
 export function startSpinnerWithSlowNotice(text) {
     const spinner = ora(text).start();
     const slowTimer = setTimeout(() => {
@@ -19,4 +20,9 @@ export function stopSpinner(spinner, slowTimer, action = 'stop', message) {
 }
 export function formatErrorMessage(err) {
     return err?.response?.data?.error || err?.response?.data?.message || err?.message || String(err);
+}
+export function maybeShowTip() {
+    if (Math.random() < 0.1) {
+        console.log(chalk.dim('\n💡 Tip: Share your progress with teammates! Run: rook share leaderboard'));
+    }
 }

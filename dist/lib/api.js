@@ -93,3 +93,15 @@ export async function getInventory(userId) {
     const { data } = await client.get(`/users/${userId}/loot`);
     return data.inventory || [];
 }
+export async function getCraftingRecipes() {
+    const stats = await getUserStats(getConfig()?.userId || '');
+    return stats.craftingRecipes || [];
+}
+export async function craft(recipeCode) {
+    const config = getConfig();
+    if (!config)
+        throw new Error('Not logged in');
+    const client = createClient();
+    const { data } = await client.post(`/crafting/${config.userId}/craft/${recipeCode}`);
+    return data;
+}

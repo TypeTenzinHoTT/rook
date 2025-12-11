@@ -5,7 +5,7 @@ import { getConfig, isLoggedIn } from '../lib/config.js';
 import { getUserStats, getRecentActivity } from '../lib/api.js';
 import { getLevelTitle, progressBar, xpProgress } from '../lib/xp.js';
 import { Achievement, UserStats } from '../types/index.js';
-import { startSpinnerWithSlowNotice, stopSpinner, formatErrorMessage } from '../lib/ui.js';
+import { startSpinnerWithSlowNotice, stopSpinner, formatErrorMessage, maybeShowTip } from '../lib/ui.js';
 
 function guardLogin() {
   if (!isLoggedIn()) {
@@ -88,8 +88,17 @@ export async function stats() {
     if (data.coachTip) {
       console.log(chalk.magenta(`Coach says: ${data.coachTip}`));
     }
+    if (data.craftingRecipes && data.craftingRecipes.length) {
+      console.log('\n  Craftable Items:');
+      data.craftingRecipes.forEach((recipe: any) => {
+        const ingredients = recipe.ingredients.map((ing: any) => `${ing.qty}x ${ing.name}`).join(', ');
+        console.log(`  - ${recipe.result.icon || '🎁'} ${recipe.name} — requires ${ingredients}`);
+      });
+    }
   } catch (err: any) {
     stopSpinner(spinner, slowTimer, 'fail', 'Could not fetch stats');
     console.error(chalk.red(formatErrorMessage(err)));
+  } finally {
+    maybeShowTip();
   }
 }

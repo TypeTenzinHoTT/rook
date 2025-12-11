@@ -60,8 +60,8 @@ export async function login() {
             {
                 type: 'confirm',
                 name: 'connectNow',
-                message: 'Do you want to connect GitHub repos to Rook now?',
-                default: false
+                message: 'Would you like to connect your GitHub repos now so Rook can track commits & give XP?',
+                default: true
             }
         ]);
         if (connectNow) {

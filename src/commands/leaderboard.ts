@@ -79,6 +79,11 @@ export async function leaderboard(opts: LeaderboardOptions) {
           console.log(chalk.green(`🎁 Loot Drop! You found: ${payload.itemIcon} ${payload.itemName} (now x${payload.quantity || '?'})`));
         }
       });
+      socket.on('craft', (data: any) => {
+        console.log(
+          chalk.magenta(`\n🎁 Crafting Complete! ${data.username || 'Someone'} forged: ${data.crafted} ${data.itemIcon || ''}`)
+        );
+      });
       socket.on('connect_error', () => {
         if (!fallbackInterval) {
           if (!notified) {

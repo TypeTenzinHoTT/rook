@@ -2,6 +2,7 @@ import express from 'express';
 import { applyXp, calculateLevel, ensureUserStats } from '../lib/progression.js';
 import { completeMaintainQuest, updateWeeklyXpQuest } from '../lib/quests.js';
 import { generateCoachTip } from '../lib/coach.js';
+import { getCraftingRecipes } from '../lib/crafting.js';
 
 export default (pool) => {
   const router = express.Router();
@@ -57,6 +58,7 @@ export default (pool) => {
         [userId]
       );
       const coachTip = await generateCoachTip({ pool, userId, username: row.username });
+      const craftingRecipes = await getCraftingRecipes(pool);
       const level = calculateLevel(row.total_xp || 0);
       res.json({
         userId: row.user_id,
@@ -84,7 +86,8 @@ export default (pool) => {
           rarity: l.rarity,
           quantity: l.quantity,
           createdAt: l.created_at
-        }))
+        })),
+        craftingRecipes
       });
     } catch (err) {
       console.error(err);

@@ -5,6 +5,7 @@ import { getConfig, isLoggedIn } from '../lib/config.js';
 import { connectWebhook } from '../lib/api.js';
 import { listManageableRepos } from '../lib/github.js';
 import { startSpinnerWithSlowNotice, stopSpinner, formatErrorMessage } from '../lib/ui.js';
+import { Octokit } from 'octokit';
 function guardLogin() {
     if (!isLoggedIn()) {
         console.log(chalk.red('You are not logged in. Run ') + chalk.cyan('rook login') + chalk.red(' first.'));
@@ -24,8 +25,24 @@ export async function connect() {
             console.log(chalk.yellow('No repos with push/admin access found. Grant access or try again later.'));
             return;
         }
+        const octokit = new Octokit({ auth: config.token });
+        const baseUrl = (config.apiUrl || '').replace(/\/?api\/?$/, '/api/webhooks/github');
+        async function isConnected(fullName) {
+            const [owner, repo] = fullName.split('/');
+            try {
+                const { data } = await octokit.rest.repos.listWebhooks({ owner, repo, per_page: 50 });
+                return data.some((h) => h.config?.url === baseUrl);
+            }
+            catch {
+                return false;
+            }
+        }
+        const connectedStatus = {};
+        for (const r of repos.slice(0, 20)) {
+            connectedStatus[r.full_name] = await isConnected(r.full_name);
+        }
         const choices = repos.map((r) => ({
-            name: `${r.full_name}${r.description ? ' — ' + r.description.slice(0, 60) : ''}`,
+            name: `${connectedStatus[r.full_name] ? '✓ ' : ''}${r.full_name}${r.description ? ' — ' + r.description.slice(0, 60) : ''}`,
             value: r.full_name
         }));
         const { selected } = await inquirer.prompt([
@@ -59,6 +76,7 @@ ${successes.join(', ')}`, {
                 padding: 1,
                 borderColor: 'green'
             }));
+            console.log(chalk.green('\n🎉 Webhooks active! Your commits will now generate XP, loot, and crafting materials automatically.'));
         }
     }
     catch (err) {

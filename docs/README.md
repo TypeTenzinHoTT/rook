@@ -19,11 +19,7 @@ This folder contains everything you need to:
 - contributing.md
 - philosophy.md
 
-#######################################################################
 
-📁 docs/screenshots (placeholder descriptions)
-
-#######################################################################
 
 
 docs/screenshots/
@@ -34,11 +30,6 @@ docs/screenshots/
   leaderboard.png    ← Real-time watch mode feed
 
 
-#######################################################################
-
-📄 docs/architecture.md
-
-#######################################################################
 
 
 # 🏗️ Rook Architecture
@@ -109,11 +100,6 @@ CLI uses a persistent socket in:
 - (optional) future dashboard
 
 
-#######################################################################
-
-📄 docs/api-reference.md
-
-#######################################################################
 
 # 📡 Rook API Reference
 
@@ -185,11 +171,7 @@ Handles:
 
 Awards XP & loot.
 
-#######################################################################
 
-📄 docs/roadmap.md
-
-#######################################################################
 
 # 🗺️ Rook Roadmap
 
@@ -239,11 +221,6 @@ Awards XP & loot.
 Rook becomes:
 **The GitHub Duolingo / Strava for developers.**
 
-#######################################################################
-
-📄 docs/philosophy.md
-
-#######################################################################
 
 # 🧠 Rook Philosophy
 
@@ -290,11 +267,6 @@ This keeps players engaged naturally.
 
 Rook turns your work into a game *you want to keep playing*.
 
-#######################################################################
-
-📄 docs/contributing.md
-
-#######################################################################
 
 
 # 🤝 Contributing to Rook
@@ -346,11 +318,7 @@ Open an issue with:
 - CLI version  
 
 
-#######################################################################
 
-📄 docs/launch/demo-script.md
-
-#######################################################################
 
 # 🎬 Rook 30-Second Demo Script
 

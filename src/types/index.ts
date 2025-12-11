@@ -16,7 +16,15 @@ export interface UserStats {
   achievements: Achievement[];
   coachTip?: string | null;
   rank?: number;
-  guild?: string;
+  guild?: string | GuildSummary | null;
+  questStreak?: number;
+  questStreakBonus?: string;
+  crafting?: CraftingSkill;
+  craftingLevel?: number;
+  craftingXp?: number;
+  luckMeter?: number;
+  prBattles?: PRBattle[];
+  prestige?: PrestigeSummary;
   recentActivity?: XPActivity[];
   recentLoot?: LootDrop[];
   craftingRecipes?: CraftingRecipe[];
@@ -86,6 +94,39 @@ export interface CraftingRecipe {
     name: string;
     icon: string;
   };
+}
+
+export interface CraftingSkill {
+  level: number;
+  xp: number;
+  perks?: string[];
+}
+
+export interface GuildSummary {
+  id?: number;
+  name?: string;
+  members?: number;
+  active?: number;
+  bonus?: number;
+  multiplier?: number;
+}
+
+export interface PRBattle {
+  opponent: string;
+  status: string;
+  you?: { prNumber?: number; reviewed?: boolean };
+  them?: { prNumber?: number; reviewed?: boolean };
+  battleId?: number;
+}
+
+export interface PrestigeSummary {
+  count: number;
+  perks: {
+    xpBonus: number;
+    rareDaily: number;
+    craftingDiscount: number;
+  };
+  perkSummary?: string;
 }
 
 export const XP_VALUES = {

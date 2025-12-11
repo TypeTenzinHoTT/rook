@@ -33,6 +33,15 @@ export async function craft() {
     const result = await craftApi(selectedRecipe);
     if (result.success) {
       console.log(chalk.green(`\n✨ Crafted: ${result.crafted} ${result.icon || ''}`));
+      if (result.bonusQuantity) {
+        console.log(chalk.magenta(`Bonus: duplicated craft (+${result.bonusQuantity})`));
+      }
+      if (result.upgraded) {
+        console.log(chalk.yellow(`Upgrade! Received ${result.upgraded.name} (${result.upgraded.rarity})`));
+      }
+      if (result.craftingLevel) {
+        console.log(chalk.cyan(`Crafting Level ${result.craftingLevel} (${result.craftingXp} XP)`));
+      }
     } else {
       console.log(chalk.red(`\n✖ ${result.error}`));
     }

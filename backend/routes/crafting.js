@@ -18,7 +18,16 @@ router.post('/:userId/craft/:recipeCode', async (req, res) => {
         newQuantity: result.newQuantity,
         username: userRow.rows[0]?.username
       });
-      return res.json({ success: true, crafted: result.crafted, icon: result.itemIcon, quantity: result.newQuantity });
+      return res.json({
+        success: true,
+        crafted: result.crafted,
+        icon: result.itemIcon,
+        quantity: result.newQuantity,
+        bonusQuantity: result.bonusQuantity,
+        upgraded: result.upgraded,
+        craftingLevel: result.craftingLevel,
+        craftingXp: result.craftingXp
+      });
     }
     return res.status(400).json({ error: result.error || 'Crafting failed' });
   } catch (err) {

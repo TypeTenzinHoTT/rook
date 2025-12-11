@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { getConfig } from './config.js';
-import { Achievement, LeaderboardEntry, Quest, UserStats, XPActivity, LootItem, CraftingRecipe } from '../types/index.js';
+import { Achievement, LeaderboardEntry, Quest, UserStats, XPActivity, LootItem, CraftingRecipe, GuildSummary, PrestigeSummary } from '../types/index.js';
 
 function createClient(): AxiosInstance {
   const config = getConfig();
@@ -122,5 +122,69 @@ export async function craft(recipeCode: string) {
   if (!config) throw new Error('Not logged in');
   const client = createClient();
   const { data } = await client.post(`/crafting/${config.userId}/craft/${recipeCode}`);
+  return data;
+}
+
+export async function saveNotificationIntegration(type: 'slack' | 'discord', webhookUrl: string) {
+  const config = getConfig();
+  if (!config) throw new Error('Not logged in');
+  const client = createClient();
+  const { data } = await client.post(`/notifications/${config.userId}/integrations`, { type, webhookUrl });
+  return data;
+}
+
+export async function listNotificationIntegrations() {
+  const config = getConfig();
+  if (!config) throw new Error('Not logged in');
+  const client = createClient();
+  const { data } = await client.get(`/notifications/${config.userId}/integrations`);
+  return data;
+}
+
+export async function createGuild(name: string) {
+  const config = getConfig();
+  if (!config) throw new Error('Not logged in');
+  const client = createClient();
+  const { data } = await client.post(`/guilds/create`, { name, userId: config.userId });
+  return data as { guildId: number };
+}
+
+export async function joinGuild(name: string) {
+  const config = getConfig();
+  if (!config) throw new Error('Not logged in');
+  const client = createClient();
+  const { data } = await client.post(`/guilds/join`, { name, userId: config.userId });
+  return data as { guildId: number };
+}
+
+export async function leaveGuild() {
+  const config = getConfig();
+  if (!config) throw new Error('Not logged in');
+  const client = createClient();
+  const { data } = await client.post(`/guilds/leave`, { userId: config.userId });
+  return data;
+}
+
+export async function inviteToGuild(targetUsername: string) {
+  const config = getConfig();
+  if (!config) throw new Error('Not logged in');
+  const client = createClient();
+  const { data } = await client.post(`/guilds/invite`, { userId: config.userId, targetUsername });
+  return data;
+}
+
+export async function getGuildStats(): Promise<GuildSummary | null> {
+  const config = getConfig();
+  if (!config) throw new Error('Not logged in');
+  const client = createClient();
+  const { data } = await client.get(`/guilds/user/${config.userId}`);
+  return data;
+}
+
+export async function prestige(): Promise<PrestigeSummary> {
+  const config = getConfig();
+  if (!config) throw new Error('Not logged in');
+  const client = createClient();
+  const { data } = await client.post(`/users/${config.userId}/prestige`, { level: undefined });
   return data;
 }

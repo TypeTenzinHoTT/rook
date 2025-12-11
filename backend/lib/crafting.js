@@ -1,4 +1,7 @@
 import { ensureUserStats } from './progression.js';
+import { getCraftingSkill, addCraftingXp } from './craftingSkill.js';
+import { getPrestigeSummary, getPrestigeCraftingDiscount } from './prestige.js';
+import { notifyCraftingLegendary } from './notifications.js';
 
 const RECIPES = [
   {
@@ -112,11 +115,15 @@ export async function getCraftingRecipes(pool) {
 
 export async function craftItem(pool, userId, recipeCode) {
   await ensureUserStats(pool, userId);
+  const prestige = await getPrestigeSummary(pool, userId);
+  const prestigeDiscount = getPrestigeCraftingDiscount(prestige?.perks);
+  const skill = await getCraftingSkill(pool, userId, prestigeDiscount);
+  const perks = skill.perks;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const recipeRes = await client.query(
-      `SELECT cr.id, cr.name, cr.code, li.id as result_item_id, li.ascii_icon
+      `SELECT cr.id, cr.name, cr.code, li.id as result_item_id, li.ascii_icon, li.rarity as result_rarity
        FROM crafting_recipes cr
        JOIN loot_items li ON li.id = cr.result_item_id
        WHERE cr.code=$1`,
@@ -139,14 +146,16 @@ export async function craftItem(pool, userId, recipeCode) {
 
     for (const ing of ingRes.rows) {
       const have = invMap.get(ing.item_id) || 0;
-      if (have < ing.quantity) {
+      const needed = Math.max(1, Math.ceil(ing.quantity * (1 - (perks.discount || 0))));
+      if (have < needed) {
         await client.query('ROLLBACK');
-        return { error: `Not enough ${ing.code} (need ${ing.quantity}, have ${have})` };
+        return { error: `Not enough ${ing.code} (need ${needed}, have ${have})` };
       }
     }
 
     for (const ing of ingRes.rows) {
-      const remaining = (invMap.get(ing.item_id) || 0) - ing.quantity;
+      const needed = Math.max(1, Math.ceil(ing.quantity * (1 - (perks.discount || 0))));
+      const remaining = (invMap.get(ing.item_id) || 0) - needed;
       if (remaining > 0) {
         await client.query('UPDATE loot_drops SET quantity=$1 WHERE user_id=$2 AND item_id=$3', [remaining, userId, ing.item_id]);
       } else {
@@ -161,8 +170,57 @@ export async function craftItem(pool, userId, recipeCode) {
       [userId, recipe.result_item_id]
     );
 
+    let bonusQuantity = 0;
+    if (perks.duplicateChance && Math.random() < perks.duplicateChance) {
+      const dup = await client.query(
+        `UPDATE loot_drops SET quantity = quantity + 1 WHERE user_id=$1 AND item_id=$2 RETURNING quantity`,
+        [userId, recipe.result_item_id]
+      );
+      bonusQuantity = 1;
+      if (!dup.rows.length) {
+        await client.query(
+          `INSERT INTO loot_drops (user_id, item_id, quantity) VALUES ($1,$2,1)
+           ON CONFLICT (user_id, item_id) DO UPDATE SET quantity = loot_drops.quantity + 1`,
+          [userId, recipe.result_item_id]
+        );
+      }
+    }
+
+    let upgraded = null;
+    if (perks.upgradeChance && Math.random() < perks.upgradeChance) {
+      const rarityOrder = ['common', 'rare', 'epic', 'legendary'];
+      const currentIdx = rarityOrder.indexOf(recipe.result_rarity || 'common');
+      const targetRarity = rarityOrder[Math.min(rarityOrder.length - 1, currentIdx + 1)];
+      const { rows: upgradeItem } = await client.query(
+        'SELECT id, name, ascii_icon, rarity FROM loot_items WHERE rarity=$1 ORDER BY drop_weight DESC LIMIT 1',
+        [targetRarity]
+      );
+      if (upgradeItem.length) {
+        await client.query(
+          `INSERT INTO loot_drops (user_id, item_id, quantity)
+           VALUES ($1,$2,1)
+           ON CONFLICT (user_id, item_id) DO UPDATE SET quantity = loot_drops.quantity + 1`,
+          [userId, upgradeItem[0].id]
+        );
+        upgraded = upgradeItem[0];
+      }
+    }
+
     await client.query('COMMIT');
-    return { success: true, crafted: recipe.name, itemIcon: recipe.ascii_icon, newQuantity: upsert.rows[0]?.quantity || 1 };
+    const craftingProgress = await addCraftingXp(pool, userId, 10, prestigeDiscount);
+    if (recipe.result_rarity === 'legendary' || upgraded?.rarity === 'legendary') {
+      await notifyCraftingLegendary(pool, { userId, itemName: recipe.name });
+    }
+    return {
+      success: true,
+      crafted: recipe.name,
+      itemIcon: recipe.ascii_icon,
+      newQuantity: upsert.rows[0]?.quantity || 1,
+      bonusQuantity,
+      upgraded,
+      craftingLevel: craftingProgress.level,
+      craftingXp: craftingProgress.xp
+    };
   } catch (err) {
     await client.query('ROLLBACK');
     return { error: 'Crafting failed' };

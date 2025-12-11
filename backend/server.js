@@ -11,6 +11,7 @@ import socialRoutes from './routes/social.js';
 import githubWebhook from './webhooks/github.js';
 import { seedAchievements } from './lib/progression.js';
 import githubRoutes from './routes/github.js';
+import { seedLootItems } from './lib/loot.js';
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ const port = process.env.PORT || 4000;
 (async () => {
   try {
     await seedAchievements(pool);
+    await seedLootItems(pool);
     server.listen(port, () => {
       console.log(`[rook-backend] listening on port ${port}`);
     });

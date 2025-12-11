@@ -88,3 +88,8 @@ export async function connectWebhook(repoFullName, token) {
     const { data } = await client.post(`/github/webhooks`, { repoFullName, token });
     return data;
 }
+export async function getInventory(userId) {
+    const client = createClient();
+    const { data } = await client.get(`/users/${userId}/loot`);
+    return data.inventory || [];
+}

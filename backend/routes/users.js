@@ -47,6 +47,15 @@ export default (pool) => {
       const { rows: recentActivity } = await pool.query('SELECT amount, reason, activity_type, created_at FROM xp_activity WHERE user_id=$1 ORDER BY created_at DESC LIMIT 5', [
         userId
       ]);
+      const { rows: recentLoot } = await pool.query(
+        `SELECT li.id as item_id, li.code, li.name, li.ascii_icon, li.rarity, ld.quantity, ld.created_at
+         FROM loot_drops ld
+         JOIN loot_items li ON li.id = ld.item_id
+         WHERE ld.user_id=$1
+         ORDER BY ld.created_at DESC
+         LIMIT 5`,
+        [userId]
+      );
       const coachTip = await generateCoachTip({ pool, userId, username: row.username });
       const level = calculateLevel(row.total_xp || 0);
       res.json({
@@ -66,7 +75,16 @@ export default (pool) => {
           unlockedAt: a.unlocked_at
         })),
         coachTip,
-        recentActivity
+        recentActivity,
+        recentLoot: recentLoot.map((l) => ({
+          itemId: l.item_id,
+          code: l.code,
+          name: l.name,
+          icon: l.ascii_icon,
+          rarity: l.rarity,
+          quantity: l.quantity,
+          createdAt: l.created_at
+        }))
       });
     } catch (err) {
       console.error(err);
@@ -104,6 +122,32 @@ export default (pool) => {
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Failed to fetch activity' });
+    }
+  });
+
+  router.get('/:userId/loot', async (req, res) => {
+    const { userId } = req.params;
+    try {
+      const { rows } = await pool.query(
+        `SELECT li.id as item_id, li.code, li.name, li.ascii_icon, li.rarity, ld.quantity
+         FROM loot_drops ld
+         JOIN loot_items li ON li.id = ld.item_id
+         WHERE ld.user_id=$1
+         ORDER BY li.rarity DESC, li.name ASC`,
+        [userId]
+      );
+      const inventory = rows.map((l) => ({
+        itemId: l.item_id,
+        code: l.code,
+        name: l.name,
+        icon: l.ascii_icon,
+        rarity: l.rarity,
+        quantity: l.quantity
+      }));
+      res.json({ inventory });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to fetch loot' });
     }
   });
 

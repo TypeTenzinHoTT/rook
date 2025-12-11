@@ -18,6 +18,7 @@ export interface UserStats {
   rank?: number;
   guild?: string;
   recentActivity?: XPActivity[];
+  recentLoot?: LootDrop[];
 }
 
 export interface Achievement {
@@ -55,6 +56,18 @@ export interface XPActivity {
   activity_type?: string;
   created_at: string;
 }
+
+export interface LootItem {
+  itemId: number;
+  code: string;
+  name: string;
+  icon: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  quantity: number;
+  createdAt?: string;
+}
+
+export type LootDrop = LootItem;
 
 export const XP_VALUES = {
   COMMIT: 50,

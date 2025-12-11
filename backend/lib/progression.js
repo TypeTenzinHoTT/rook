@@ -1,3 +1,5 @@
+import { awardRandomLoot } from './loot.js';
+
 export function calculateLevel(totalXp) {
   return Math.floor(Math.sqrt(totalXp / 1000)) + 1;
 }
@@ -117,6 +119,6 @@ export async function applyXp(pool, { userId, amount, reason, activityType, io, 
   const unlocked = await checkAndUnlockAchievements(pool, userId, row.total_xp || 0, newTotal, newStreak, context);
 
   io?.emit('leaderboard:update', { userId, totalXp: newTotal, delta: amount });
-
+  await awardRandomLoot(pool, userId, io);
   return { totalXp: newTotal, streak: newStreak, level: calculateLevel(newTotal), unlocked };
 }

@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { getConfig } from './config.js';
-import { Achievement, LeaderboardEntry, Quest, UserStats, XPActivity } from '../types/index.js';
+import { Achievement, LeaderboardEntry, Quest, UserStats, XPActivity, LootItem } from '../types/index.js';
 
 function createClient(): AxiosInstance {
   const config = getConfig();
@@ -104,4 +104,10 @@ export async function connectWebhook(repoFullName: string, token: string) {
   const client = createClient();
   const { data } = await client.post(`/github/webhooks`, { repoFullName, token });
   return data;
+}
+
+export async function getInventory(userId: string): Promise<LootItem[]> {
+  const client = createClient();
+  const { data } = await client.get(`/users/${userId}/loot`);
+  return data.inventory || [];
 }

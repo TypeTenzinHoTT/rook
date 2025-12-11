@@ -45,6 +45,7 @@ export async function stats() {
     const progress = xpProgress(data.totalXp);
     const title = getLevelTitle(progress.level);
     const achievements = data.achievements || [];
+    const loot = (data as any).recentLoot || [];
     const streakLine =
       data.streak > 0
         ? `${chalk.red('🔥 Streak:')} ${data.streak} days ${chalk.gray('(keep it alive until UTC midnight)')}`
@@ -67,7 +68,14 @@ export async function stats() {
         ? activity
             .map((act: any) => `${chalk.green('+' + act.amount)} XP for ${chalk.white(act.reason || act.activity_type || 'activity')} (${chalk.gray(new Date(act.created_at).toLocaleString())})`)
             .join('\n')
-        : 'No recent activity yet.'
+        : 'No recent activity yet.',
+      '',
+      chalk.bold('Recent Loot:'),
+      loot && loot.length
+        ? loot
+            .map((l: any) => `${chalk.green('+1')} ${l.icon || '🎁'} ${chalk.white(l.name)} ${chalk.gray('(now x' + (l.quantity || 1) + ')')}`)
+            .join('\n')
+        : 'No loot drops yet. Earn XP to get rewards!'
     ];
 
     console.log(

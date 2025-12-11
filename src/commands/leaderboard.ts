@@ -74,6 +74,11 @@ export async function leaderboard(opts: LeaderboardOptions) {
       const socket = socketClient(baseUrl, { transports: ['websocket', 'polling'] });
       socket.on('connect', () => console.log(chalk.gray('Connected to real-time updates.')));
       socket.on('leaderboard:update', () => render(false));
+      socket.on('loot', (payload: any) => {
+        if (payload?.itemName && payload?.itemIcon) {
+          console.log(chalk.green(`🎁 Loot Drop! You found: ${payload.itemIcon} ${payload.itemName} (now x${payload.quantity || '?'})`));
+        }
+      });
       socket.on('connect_error', () => {
         if (!fallbackInterval) {
           if (!notified) {

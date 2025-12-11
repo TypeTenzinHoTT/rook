@@ -3,8 +3,8 @@
 A gamified CLI that turns daily developer work into an RPG loop. Track XP from GitHub, clear daily/weekly quests, climb leaderboards, and share wins with friends.
 
 ## Quickstart
-1. Install deps: `npm install`
-2. Dev run CLI: `npm run dev -- rook` 
+1. npm install
+2. rook init - And then follow the on screen instructions
 3. Build: `npm run build`
 4. Link locally: `npm link` then run `rook <command>`
 

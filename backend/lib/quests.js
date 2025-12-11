@@ -1,4 +1,7 @@
-import { applyXp, ensureUserStats } from './progression.js';
+import { ensureUserStats } from './progression.js';
+import { applyXpWithBonuses } from './xpEvents.js';
+import { updateQuestStreak } from './questStreak.js';
+import { notifyWeeklyBoss } from './notifications.js';
 
 export const DAILY_QUESTS = [
   { title: 'Make 3 commits', description: 'Push code to earn XP', xp_reward: 150, progress_total: 3 },
@@ -102,7 +105,7 @@ export async function updateQuestProgress(pool, { userId, title, increment = 1, 
     } else {
       context.weeklyClearedThisWeek = await isWeeklyBoardCleared(pool, userId);
     }
-    const result = await applyXp(pool, {
+    const result = await applyXpWithBonuses(pool, {
       userId,
       amount: quest.xp_reward,
       reason: quest.title,
@@ -111,7 +114,13 @@ export async function updateQuestProgress(pool, { userId, title, increment = 1, 
       context
     });
     if (trackXpReward && title !== 'Earn 1000 XP this week') {
-      await updateWeeklyXpQuest(pool, { userId, increment: quest.xp_reward, io });
+      await updateWeeklyXpQuest(pool, { userId, increment: result.appliedXp || quest.xp_reward, io });
+    }
+    if (type === 'daily' && context.dailyClearedToday) {
+      await updateQuestStreak(pool, userId);
+    }
+    if (type !== 'daily' && context.weeklyClearedThisWeek) {
+      await notifyWeeklyBoss(pool, { userId });
     }
     return { ...quest, progress_current: newProgress, completed: true, streak: result.streak };
   }
@@ -126,7 +135,7 @@ export async function completeMaintainQuest(pool, { userId, streak, io }) {
   if (!quest || quest.completed) return;
   await pool.query('UPDATE daily_quests SET progress_current=$1, completed=true WHERE id=$2', [1, quest.id]);
   const context = { dailyClearedToday: await isDailyBoardCleared(pool, userId) };
-  await applyXp(pool, { userId, amount: quest.xp_reward, reason: quest.title, activityType: 'quest', io, context });
+  await applyXpWithBonuses(pool, { userId, amount: quest.xp_reward, reason: quest.title, activityType: 'quest', io, context });
 }
 
 export async function updateWeeklyXpQuest(pool, { userId, increment, io }) {

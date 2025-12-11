@@ -11,6 +11,13 @@ import { history } from './commands/history.js';
 import { inventory } from './commands/inventory.js';
 import { craft } from './commands/craft.js';
 import { init } from './commands/init.js';
+import { notify } from './commands/notify.js';
+import { guildCreate } from './commands/guild/create.js';
+import { guildJoin } from './commands/guild/join.js';
+import { guildInvite } from './commands/guild/invite.js';
+import { guildLeave } from './commands/guild/leave.js';
+import { guildStats } from './commands/guild/stats.js';
+import { prestigeCommand } from './commands/prestige.js';
 
 const program = new Command();
 
@@ -36,5 +43,15 @@ program.command('history').description('View your XP history').action(history);
 program.command('inventory').description('View your loot inventory').action(inventory);
 program.command('craft').description('Craft items from your loot').action(craft);
 program.command('init').description('Initialize Rook: login + connect repos').action(init);
+program.command('notify').description('Configure social notifications').action(notify);
+
+const guild = program.command('guild').description('Manage guilds');
+guild.command('create').argument('[name]', 'Guild name').action(guildCreate);
+guild.command('join').argument('[name]', 'Guild name').action(guildJoin);
+guild.command('invite').argument('[username]', 'Username to invite').action(guildInvite);
+guild.command('leave').description('Leave your guild').action(guildLeave);
+guild.command('stats').description('View guild stats').action(guildStats);
+
+program.command('prestige').description('Reset to level 1 for permanent perks').action(prestigeCommand);
 
 program.parse();

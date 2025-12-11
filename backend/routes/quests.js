@@ -1,6 +1,8 @@
 import express from 'express';
 import { ensureDailyQuests, ensureWeeklyQuests, completeMaintainQuest, updateWeeklyXpQuest } from '../lib/quests.js';
-import { applyXp } from '../lib/progression.js';
+import { applyXpWithBonuses } from '../lib/xpEvents.js';
+import { updateQuestStreak } from '../lib/questStreak.js';
+import { notifyWeeklyBoss } from '../lib/notifications.js';
 
 export default (pool) => {
   const router = express.Router();
@@ -72,9 +74,15 @@ export default (pool) => {
           );
           context = { weeklyClearedThisWeek: Number(rows[0]?.remaining || 0) === 0 };
         }
-        const result = await applyXp(pool, { userId, amount: quest.xp_reward, reason: quest.title, activityType: 'quest', io, context });
-        await updateWeeklyXpQuest(pool, { userId, increment: quest.xp_reward, io });
+        const result = await applyXpWithBonuses(pool, { userId, amount: quest.xp_reward, reason: quest.title, activityType: 'quest', io, context });
+        await updateWeeklyXpQuest(pool, { userId, increment: result.appliedXp || quest.xp_reward, io });
         await completeMaintainQuest(pool, { userId, streak: result.streak, io });
+        if (quest.type === 'daily' && context.dailyClearedToday) {
+          await updateQuestStreak(pool, userId);
+        }
+        if (quest.type !== 'daily' && context.weeklyClearedThisWeek) {
+          await notifyWeeklyBoss(pool, { userId });
+        }
       }
       res.json({ status: 'ok', xpAwarded: quest.xp_reward });
     } catch (err) {

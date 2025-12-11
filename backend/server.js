@@ -14,6 +14,8 @@ import githubRoutes from './routes/github.js';
 import { seedLootItems } from './lib/loot.js';
 import craftingRoutes from './routes/crafting.js';
 import { seedCraftingRecipes } from './lib/crafting.js';
+import guildRoutes from './routes/guilds.js';
+import notificationsRoutes from './routes/notifications.js';
 
 dotenv.config();
 
@@ -43,6 +45,8 @@ app.use('/api/users', socialRoutes(pool));
 app.use('/api/webhooks/github', githubWebhook(pool));
 app.use('/api', githubRoutes(pool));
 app.use('/api/crafting', craftingRoutes);
+app.use('/api/guilds', guildRoutes(pool));
+app.use('/api/notifications', notificationsRoutes(pool));
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 

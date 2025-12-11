@@ -67,6 +67,16 @@ export async function leaderboard(opts) {
             socket.on('craft', (data) => {
                 console.log(chalk.magenta(`\n🎁 Crafting Complete! ${data.username || 'Someone'} forged: ${data.crafted} ${data.itemIcon || ''}`));
             });
+            socket.on('battle:update', (data) => {
+                if (data?.opponent) {
+                    console.log(chalk.blue(`⚔️ PR Battle update: vs ${data.opponent} — ${data.status || 'pending'}`));
+                }
+            });
+            socket.on('battle:win', (data) => {
+                if (data?.winner) {
+                    console.log(chalk.green(`🏆 PR Battle won by user ${data.winner}${data.opponent ? ' against ' + data.opponent : ''}`));
+                }
+            });
             socket.on('connect_error', () => {
                 if (!fallbackInterval) {
                     if (!notified) {

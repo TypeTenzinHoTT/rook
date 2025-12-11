@@ -105,3 +105,67 @@ export async function craft(recipeCode) {
     const { data } = await client.post(`/crafting/${config.userId}/craft/${recipeCode}`);
     return data;
 }
+export async function saveNotificationIntegration(type, webhookUrl) {
+    const config = getConfig();
+    if (!config)
+        throw new Error('Not logged in');
+    const client = createClient();
+    const { data } = await client.post(`/notifications/${config.userId}/integrations`, { type, webhookUrl });
+    return data;
+}
+export async function listNotificationIntegrations() {
+    const config = getConfig();
+    if (!config)
+        throw new Error('Not logged in');
+    const client = createClient();
+    const { data } = await client.get(`/notifications/${config.userId}/integrations`);
+    return data;
+}
+export async function createGuild(name) {
+    const config = getConfig();
+    if (!config)
+        throw new Error('Not logged in');
+    const client = createClient();
+    const { data } = await client.post(`/guilds/create`, { name, userId: config.userId });
+    return data;
+}
+export async function joinGuild(name) {
+    const config = getConfig();
+    if (!config)
+        throw new Error('Not logged in');
+    const client = createClient();
+    const { data } = await client.post(`/guilds/join`, { name, userId: config.userId });
+    return data;
+}
+export async function leaveGuild() {
+    const config = getConfig();
+    if (!config)
+        throw new Error('Not logged in');
+    const client = createClient();
+    const { data } = await client.post(`/guilds/leave`, { userId: config.userId });
+    return data;
+}
+export async function inviteToGuild(targetUsername) {
+    const config = getConfig();
+    if (!config)
+        throw new Error('Not logged in');
+    const client = createClient();
+    const { data } = await client.post(`/guilds/invite`, { userId: config.userId, targetUsername });
+    return data;
+}
+export async function getGuildStats() {
+    const config = getConfig();
+    if (!config)
+        throw new Error('Not logged in');
+    const client = createClient();
+    const { data } = await client.get(`/guilds/user/${config.userId}`);
+    return data;
+}
+export async function prestige() {
+    const config = getConfig();
+    if (!config)
+        throw new Error('Not logged in');
+    const client = createClient();
+    const { data } = await client.post(`/users/${config.userId}/prestige`, { level: undefined });
+    return data;
+}

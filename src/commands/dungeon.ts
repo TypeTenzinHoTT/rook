@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import Table from 'cli-table3';
 import boxen from 'boxen';
 import { getConfig, isLoggedIn } from '../lib/config.js';
-import { getDailyQuests, getWeeklyQuests } from '../lib/api.js';
+import { getDailyQuests, getWeeklyQuests, getUserStats } from '../lib/api.js';
 import { progressBar } from '../lib/xp.js';
 import { Quest } from '../types/index.js';
 import { startSpinnerWithSlowNotice, stopSpinner, formatErrorMessage, maybeShowTip } from '../lib/ui.js';
@@ -36,9 +36,10 @@ export async function dungeon() {
 
   const { spinner, slowTimer } = startSpinnerWithSlowNotice('Entering the daily dungeon...');
   try {
-    const [daily, weekly] = await Promise.all([
+    const [daily, weekly, stats] = await Promise.all([
       getDailyQuests(config.userId),
-      getWeeklyQuests(config.userId)
+      getWeeklyQuests(config.userId),
+      getUserStats(config.userId)
     ]);
     stopSpinner(spinner, slowTimer);
 
@@ -55,12 +56,19 @@ export async function dungeon() {
         : dailyComplete < daily.length
         ? chalk.yellow("You're mid-run — finish those remaining quests for max XP.")
         : chalk.green('Daily board cleared! Come back tomorrow to keep your streak alive.');
+    const questStreak = (stats as any)?.questStreak || 0;
+    const questStreakBonus = (stats as any)?.questStreakBonus;
+    const battles = (stats as any)?.prBattles || [];
+    const battleLines =
+      battles && battles.length
+        ? `\n\n${chalk.blue('⚔️ PR Battles:')}\n${battles.map((b: any) => `- vs ${b.opponent} — ${b.status || 'pending'}`).join('\n')}`
+        : '';
 
     console.log(
       boxen(
         `${chalk.yellow('🗡️ Daily Quests')} (${timeUntilReset()})\n${dailyTable.toString()}\n\n${chalk.magenta('⚔️ Weekly Bosses')}\n${weeklyTable.toString()}\n\n${chalk.gray(
           'Progress auto-updates from your GitHub pushes, PRs, reviews, and issues.'
-        )}\n${dailyMsg}`,
+        )}\n${dailyMsg}\n${questStreak ? `${chalk.red('🔥 Quest Streak')}: ${questStreak} (${questStreakBonus || 'active'})` : ''}${battleLines}`,
         {
           padding: 1,
           borderColor: 'yellow'

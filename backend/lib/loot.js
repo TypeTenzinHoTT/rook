@@ -1,24 +1,52 @@
 let lootTable = [];
 
+const rarityRank = {
+  common: 0,
+  rare: 1,
+  epic: 2,
+  legendary: 3
+};
+
 export async function loadLootTable(pool) {
   const { rows } = await pool.query('SELECT id, code, name, rarity, drop_weight, description, ascii_icon FROM loot_items');
   lootTable = rows || [];
   return lootTable;
 }
 
-export function getRandomLoot() {
+async function findItemById(pool, itemId) {
+  const existing = lootTable.find((i) => Number(i.id) === Number(itemId));
+  if (existing) return existing;
+  const { rows } = await pool.query('SELECT id, name, ascii_icon, rarity FROM loot_items WHERE id=$1', [itemId]);
+  return rows[0];
+}
+
+export function getRandomLoot(options = {}) {
+  const { luckMeter = 0, forceRarity, minRarity } = options;
   if (!lootTable.length) return null;
-  const totalWeight = lootTable.reduce((sum, item) => sum + (item.drop_weight || 0), 0);
+  const minRank = minRarity ? rarityRank[minRarity] ?? -1 : -1;
+  const filtered = lootTable
+    .map((item) => {
+      if (forceRarity && item.rarity !== forceRarity) return null;
+      if (minRank >= 0 && (rarityRank[item.rarity] ?? -1) < minRank) return null;
+      let weight = item.drop_weight || 0;
+      if (['rare', 'epic', 'legendary'].includes(item.rarity) && luckMeter > 0) {
+        weight = weight * (1 + luckMeter * 0.005);
+      }
+      return { item, weight };
+    })
+    .filter(Boolean);
+  const totalWeight = filtered.reduce((sum, entry) => sum + (entry?.weight || 0), 0);
   if (totalWeight <= 0) return null;
   let roll = Math.random() * totalWeight;
-  for (const item of lootTable) {
-    roll -= item.drop_weight || 0;
-    if (roll <= 0) return item;
+  for (const entry of filtered) {
+    roll -= entry.weight || 0;
+    if (roll <= 0) return entry.item;
   }
-  return lootTable[lootTable.length - 1];
+  return filtered[filtered.length - 1]?.item || null;
 }
 
 export async function awardLoot(pool, { userId, itemId }) {
+  const item = await findItemById(pool, itemId);
   const upsert = await pool.query(
     `INSERT INTO loot_drops (user_id, item_id, quantity)
      VALUES ($1, $2, 1)
@@ -28,17 +56,34 @@ export async function awardLoot(pool, { userId, itemId }) {
     [userId, itemId]
   );
   const quantity = upsert.rows[0]?.quantity || 1;
+  await updateLuckMeter(pool, userId, item?.rarity);
   return quantity;
 }
 
-export async function awardRandomLoot(pool, userId, io) {
+async function updateLuckMeter(pool, userId, rarity) {
+  if (!userId) return;
+  if (rarity && ['rare', 'epic', 'legendary'].includes(rarity)) {
+    await pool.query('UPDATE user_stats SET luck_meter=0 WHERE user_id=$1', [userId]);
+  } else {
+    await pool.query('UPDATE user_stats SET luck_meter = COALESCE(luck_meter,0) + 1 WHERE user_id=$1', [userId]);
+  }
+}
+
+async function getLuckMeter(pool, userId) {
+  const { rows } = await pool.query('SELECT luck_meter FROM user_stats WHERE user_id=$1', [userId]);
+  return rows[0]?.luck_meter || 0;
+}
+
+export async function awardRandomLoot(pool, userId, io, options = {}) {
   if (!lootTable.length) {
     await loadLootTable(pool);
   }
-  const item = getRandomLoot();
+  const luckMeter = options.luckMeter ?? (await getLuckMeter(pool, userId));
+  const item = getRandomLoot({ luckMeter, forceRarity: options.forceRarity, minRarity: options.minRarity });
   if (!item) return null;
   const quantity = await awardLoot(pool, { userId, itemId: item.id });
-  const payload = { userId, itemName: item.name, itemIcon: item.ascii_icon, quantity };
+  await updateLuckMeter(pool, userId, item.rarity);
+  const payload = { userId, itemName: item.name, itemIcon: item.ascii_icon, quantity, rarity: item.rarity };
   io?.emit('loot', payload);
   return payload;
 }

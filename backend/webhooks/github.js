@@ -1,7 +1,8 @@
 import express from 'express';
 import crypto from 'crypto';
-import { applyXp } from '../lib/progression.js';
+import { applyXpWithBonuses } from '../lib/xpEvents.js';
 import { updateQuestProgress, completeMaintainQuest, updateWeeklyXpQuest } from '../lib/quests.js';
+import { handlePrOpened, handlePrReviewed } from '../lib/prBattles.js';
 
 const XP = {
   COMMIT: 50,
@@ -32,10 +33,10 @@ export default (pool) => {
   }
 
   async function handleXpAndStreak(userId, amount, reason, activityType, io) {
-    const result = await applyXp(pool, { userId, amount, reason, activityType, io });
+    const result = await applyXpWithBonuses(pool, { userId, amount, reason, activityType, io });
     await completeMaintainQuest(pool, { userId, streak: result.streak, io });
     if (amount) {
-      await updateWeeklyXpQuest(pool, { userId, increment: amount, io });
+      await updateWeeklyXpQuest(pool, { userId, increment: result.appliedXp || amount, io });
     }
     return result;
   }
@@ -65,6 +66,14 @@ export default (pool) => {
         if (action === 'opened') {
           await handleXpAndStreak(userId, XP.PR_CREATED, 'Opened PR', 'pr', io);
           await updateQuestProgress(pool, { userId, title: 'Open 1 PR', increment: 1, type: 'daily', io, trackXpReward: true });
+          await handlePrOpened(pool, {
+            userId,
+            prId: payload?.pull_request?.id,
+            prNumber: payload?.pull_request?.number,
+            repo: payload?.repository?.full_name,
+            url: payload?.pull_request?.html_url,
+            io
+          });
         }
         if (action === 'closed' && payload?.pull_request?.merged) {
           await handleXpAndStreak(userId, XP.PR_MERGED, 'Merged PR', 'pr', io);
@@ -84,6 +93,9 @@ export default (pool) => {
         if (action === 'submitted') {
           await handleXpAndStreak(userId, XP.PR_REVIEWED, 'Reviewed PR', 'review', io);
           await updateQuestProgress(pool, { userId, title: 'Review 2 PRs', increment: 1, type: 'daily', io, trackXpReward: true });
+          if (payload?.pull_request?.id) {
+            await handlePrReviewed(pool, { prId: payload.pull_request.id, io });
+          }
         }
       }
       res.json({ status: 'ok' });

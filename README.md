@@ -1,6 +1,6 @@
 DHSH
 # Rook: The Developer's Roguelike
-
+Authored by Tarun Mittal
 A gamified CLI that turns daily developer work into an RPG loop. Track XP from GitHub, clear daily/weekly quests, climb leaderboards, and share wins with friends.
 
 ## Quickstart

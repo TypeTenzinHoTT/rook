@@ -1,9 +1,10 @@
 import http from 'node:http';
 
 const port = Number(process.env.PORT || 8080);
-const docsUpstreamHost = process.env.DOCS_UPSTREAM_HOST || 'chromaflow.mintlify.dev';
+const docsUpstreamHost = process.env.DOCS_UPSTREAM_HOST || 'rook.mintlify.app';
 const customHost = process.env.CUSTOM_HOST || 'www.chromaflow.ai';
 const basePath = normalizeBasePath(process.env.BASE_PATH || '/docs');
+const upstreamBasePath = normalizeBasePath(process.env.UPSTREAM_BASE_PATH || '/docs');
 const stripBasePath = /^(1|true|yes)$/i.test(process.env.STRIP_BASE_PATH || '');
 
 const hopByHopHeaders = new Set([
@@ -30,16 +31,24 @@ function matchesBasePath(pathname) {
 }
 
 function buildUpstreamPath(pathname, search) {
-  if (basePath === '/' || !stripBasePath) {
-    return `${pathname}${search}`;
+  let effectivePath = pathname;
+
+  if (basePath === '/') {
+    effectivePath = pathname;
+  } else if (stripBasePath) {
+    effectivePath = pathname === basePath ? '/' : pathname.slice(basePath.length) || '/';
   }
 
-  if (pathname === basePath) {
-    return `/${search.replace(/^\?/, '?')}`;
+  let upstreamPathname;
+  if (upstreamBasePath === '/') {
+    upstreamPathname = effectivePath;
+  } else if (effectivePath === '/') {
+    upstreamPathname = upstreamBasePath;
+  } else {
+    upstreamPathname = `${upstreamBasePath}${effectivePath}`;
   }
 
-  const stripped = pathname.slice(basePath.length) || '/';
-  return `${stripped}${search}`;
+  return `${upstreamPathname}${search}`;
 }
 
 function copyRequestHeaders(headers) {
@@ -114,6 +123,7 @@ const server = http.createServer(async (req, res) => {
         docsUpstreamHost,
         customHost,
         basePath,
+        upstreamBasePath,
         stripBasePath
       }));
       return;
@@ -151,5 +161,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(port, () => {
   console.log(`[docs-proxy] listening on :${port}`);
-  console.log(`[docs-proxy] upstream=${docsUpstreamHost} customHost=${customHost} basePath=${basePath} stripBasePath=${stripBasePath}`);
+  console.log(
+    `[docs-proxy] upstream=${docsUpstreamHost} customHost=${customHost} basePath=${basePath} upstreamBasePath=${upstreamBasePath} stripBasePath=${stripBasePath}`
+  );
 });

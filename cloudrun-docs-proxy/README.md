@@ -1,14 +1,14 @@
-# Cloud Run Docs Proxy
+# Cloud Run Website + Docs Proxy
 
-This service proxies a Mintlify deployment behind a custom domain or subpath.
+This service serves the Rook marketing site at `/` and proxies Mintlify docs behind a custom domain subpath such as `/docs`.
 
 ## Environment variables
 
 - `DOCS_UPSTREAM_HOST`: Mintlify upstream host, for example `rook.mintlify.app`
 - `CUSTOM_HOST`: public hostname, for example `www.chromaflow.ai` or `rook.ai`
-- `BASE_PATH`: external path prefix to proxy, for example `/docs` or `/`
+- `DOCS_BASE_PATH`: external path prefix to proxy, for example `/docs`
 - `UPSTREAM_BASE_PATH`: path prefix used by the upstream Mintlify site, for example `/docs`
-- `STRIP_BASE_PATH`: set to `true` only if the upstream expects root paths instead of `/docs`
+- `STRIP_DOCS_BASE_PATH`: set to `true` only if the upstream expects root paths instead of `/docs`
 
 ## Deploy
 
@@ -18,7 +18,7 @@ gcloud run deploy rook-docs \
   --region us-central1 \
   --project octave-x-prod \
   --allow-unauthenticated \
-  --set-env-vars DOCS_UPSTREAM_HOST=rook.mintlify.app,CUSTOM_HOST=rook.ai,BASE_PATH=/,UPSTREAM_BASE_PATH=/,STRIP_BASE_PATH=false
+  --set-env-vars DOCS_UPSTREAM_HOST=rook.mintlify.app,CUSTOM_HOST=rook.ai,DOCS_BASE_PATH=/docs,UPSTREAM_BASE_PATH=/,STRIP_DOCS_BASE_PATH=true
 ```
 
 ## Health check

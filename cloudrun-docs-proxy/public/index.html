@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rook | The Enterprise Layer For Developer Momentum</title>
+    <meta
+      name="description"
+      content="Rook turns commits, pull requests, reviews, and issue work into a live operating system for engineering momentum."
+    />
+    <meta property="og:title" content="Rook | The Enterprise Layer For Developer Momentum" />
+    <meta
+      property="og:description"
+      content="A high-signal command center for shipping teams: progression, quests, loot, leaderboards, and self-hosted control."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#10322C" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="backdrop backdrop-one"></div>
+    <div class="backdrop backdrop-two"></div>
+    <header class="site-header">
+      <a class="brand" href="/">
+        <span class="brand-mark">R</span>
+        <span class="brand-copy">
+          <strong>Rook</strong>
+          <small>developer momentum, operationalized</small>
+        </span>
+      </a>
+      <nav class="site-nav">
+        <a href="#platform">Platform</a>
+        <a href="#control-room">Control Room</a>
+        <a href="#faq">FAQ</a>
+        <a href="/docs">Docs</a>
+      </nav>
+      <div class="header-actions">
+        <a class="button button-secondary" href="https://github.com/TypeTenzinHoTT/rook">GitHub</a>
+        <a class="button button-primary" href="/docs">Open Docs</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Enterprise-grade developer operating system</p>
+          <h1>Make every engineering signal visible, playable, and impossible to ignore.</h1>
+          <p class="hero-text">
+            Rook converts GitHub activity into a live command layer for engineering orgs: quests, progression, loot,
+            guild incentives, realtime feeds, and self-hosted control. It feels playful on the surface and brutally
+            operational underneath.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="/docs/quickstart">Launch in Minutes</a>
+            <a class="button button-secondary" href="/docs/api-reference/introduction">See the API</a>
+          </div>
+          <ul class="signal-strip">
+            <li>Self-hostable backend</li>
+            <li>Realtime Socket.io feed</li>
+            <li>GitHub-native onboarding</li>
+            <li>Enterprise-ready documentation</li>
+          </ul>
+        </div>
+
+        <div class="hero-panel">
+          <div class="panel-shell">
+            <div class="panel-topline">
+              <span class="status-dot"></span>
+              <span>Live command stream</span>
+              <span class="mono subtle">rook.ai/control</span>
+            </div>
+            <div class="terminal-window">
+              <div class="terminal-heading">
+                <span>Rook command console</span>
+                <span class="mono" id="command-label">rook leaderboard --watch</span>
+              </div>
+              <pre id="terminal-output" class="terminal-output"></pre>
+            </div>
+            <div class="metric-ribbon">
+              <article>
+                <strong data-count="420">0</strong>
+                <span>live events processed</span>
+              </article>
+              <article>
+                <strong data-count="17">0</strong>
+                <span>engineering rituals tracked</span>
+              </article>
+              <article>
+                <strong data-count="99">0</strong>
+                <span>signal confidence score</span>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="platform" class="section">
+        <div class="section-heading">
+          <p class="eyebrow">Why teams adopt Rook</p>
+          <h2>Not another dashboard. A pressure-tested ritual layer for shipping teams.</h2>
+        </div>
+        <div class="card-grid">
+          <article class="feature-card">
+            <span class="feature-index">01</span>
+            <h3>Progress With Consequences</h3>
+            <p>
+              Commits, PRs, reviews, and issue closures resolve into XP, streaks, quests, loot, and prestige. Teams stop
+              guessing whether momentum is healthy.
+            </p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-index">02</span>
+            <h3>Realtime Team Theater</h3>
+            <p>
+              Watch rank shifts, drops, crafts, and PR battles stream into the terminal. It turns passive metrics into an
+              active operating loop.
+            </p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-index">03</span>
+            <h3>Self-Hosted Control</h3>
+            <p>
+              Express, PostgreSQL, Socket.io, and Mintlify docs make the system inspectable, customizable, and easy to
+              fit into regulated engineering environments.
+            </p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-index">04</span>
+            <h3>Behavior Design, Not Vanity Metrics</h3>
+            <p>
+              Daily boards, weekly bosses, guild incentives, and crafting perks create the right kind of pressure: visible,
+              compounding, and difficult to ignore.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="control-room" class="section control-room">
+        <div class="section-heading">
+          <p class="eyebrow">Control room</p>
+          <h2>Move between experience, infrastructure, and governance without losing the plot.</h2>
+        </div>
+
+        <div class="mode-picker" role="tablist" aria-label="Rook operating modes">
+          <button class="mode-button active" data-mode="experience" type="button">Experience</button>
+          <button class="mode-button" data-mode="infrastructure" type="button">Infrastructure</button>
+          <button class="mode-button" data-mode="governance" type="button">Governance</button>
+        </div>
+
+        <div class="mode-panel active" data-panel="experience">
+          <div class="mode-layout">
+            <div>
+              <h3>Game design with operational outcomes</h3>
+              <p>
+                The surface area is deliberately expressive: progression curves, quest streak bonuses, crafting loops, and
+                guild incentives combine into a developer-facing experience that feels fast, personal, and legible.
+              </p>
+              <ul class="bullet-list">
+                <li>CLI-first interactions keep the feedback loop inside the toolchain engineers already live in.</li>
+                <li>Reward design creates habits around reviews, merges, and consistent throughput.</li>
+                <li>Realtime outputs make team motion emotionally legible, not just analytically available.</li>
+              </ul>
+            </div>
+            <div class="detail-card">
+              <span class="mono detail-tag">experience.map</span>
+              <div class="stack-list">
+                <div><strong>Stats</strong><span>hero sheet, streaks, loot, guilds, prestige</span></div>
+                <div><strong>Dungeon</strong><span>daily quests, weekly bosses, PR battles</span></div>
+                <div><strong>Leaderboard</strong><span>friends, global, watch mode</span></div>
+                <div><strong>Crafting</strong><span>recipes, perks, rarity upgrades</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mode-panel" data-panel="infrastructure">
+          <div class="mode-layout">
+            <div>
+              <h3>Simple topology, high leverage</h3>
+              <p>
+                Rook is intentionally compact: Commander on the CLI, Express and Socket.io on the backend, PostgreSQL for
+                state, and Mintlify for docs. That simplicity is why it can move fast without turning into operational mush.
+              </p>
+              <ul class="bullet-list">
+                <li>GitHub webhook ingestion awards XP and advances quests automatically.</li>
+                <li>Socket.io keeps watch-mode sessions alive with meaningful events instead of noisy polling.</li>
+                <li>Cloud Run deployment keeps ops lightweight while still providing production discipline.</li>
+              </ul>
+            </div>
+            <div class="detail-card architecture-card">
+              <span class="mono detail-tag">runtime.topology</span>
+              <div class="flow-node">GitHub events</div>
+              <div class="flow-arrow"></div>
+              <div class="flow-node">Rook API</div>
+              <div class="flow-arrow"></div>
+              <div class="flow-node">PostgreSQL + Socket.io</div>
+              <div class="flow-arrow"></div>
+              <div class="flow-node">CLI + Docs</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mode-panel" data-panel="governance">
+          <div class="mode-layout">
+            <div>
+              <h3>Enterprise posture without killing the energy</h3>
+              <p>
+                The right framing for Rook is not “fun CLI” versus “serious platform.” It is an engineering operating
+                layer that happens to understand motivation, visibility, and team psychology.
+              </p>
+              <ul class="bullet-list">
+                <li>Inspectable self-hosting path for teams that need control over data boundaries.</li>
+                <li>Explicit API reference and route inventory for internal review and platform integration.</li>
+                <li>A docs surface designed for onboarding contributors, operators, and buyers without ambiguity.</li>
+              </ul>
+            </div>
+            <div class="detail-card">
+              <span class="mono detail-tag">governance.snapshot</span>
+              <div class="stack-list">
+                <div><strong>Auditability</strong><span>open repo, explicit docs, route-level visibility</span></div>
+                <div><strong>Deployability</strong><span>Cloud Run friendly, domain-ready, minimal moving pieces</span></div>
+                <div><strong>Extensibility</strong><span>notifications, guilds, API surface, custom reward loops</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section rails">
+        <div class="rail-card warm">
+          <p class="eyebrow">Ship the product</p>
+          <h3>Marketing site, docs, and infrastructure now align around the same object.</h3>
+          <p>
+            Root site for narrative. `/docs` for operator truth. Cloud Run for deployment discipline. The system is ready
+            for a real domain as soon as registrar ownership is sorted.
+          </p>
+        </div>
+        <div class="rail-card dark">
+          <p class="eyebrow">Immediate actions</p>
+          <div class="cta-group">
+            <a class="button button-primary" href="/docs">Browse Documentation</a>
+            <a class="button button-secondary" href="https://www.npmjs.com/package/rook-rpg">Install from npm</a>
+            <a class="button button-secondary" href="mailto:tarun@octave-x.com">Contact Tarun</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="faq" class="section faq-section">
+        <div class="section-heading">
+          <p class="eyebrow">FAQ</p>
+          <h2>Questions the platform should answer cleanly.</h2>
+        </div>
+        <div class="faq-grid">
+          <details open>
+            <summary>What is Rook actually for?</summary>
+            <p>
+              Rook is for teams who want engineering momentum to feel visible and actionable. It turns GitHub activity into
+              progression, rituals, and team-level incentives without requiring a heavyweight dashboard-first rollout.
+            </p>
+          </details>
+          <details>
+            <summary>Can it be self-hosted?</summary>
+            <p>
+              Yes. The backend is Express, PostgreSQL, and Socket.io. The docs are Mintlify-based. The deployment path now
+              includes Cloud Run support and a root-site plus `/docs` proxy model.
+            </p>
+          </details>
+          <details>
+            <summary>Does it expose an API?</summary>
+            <p>
+              Yes. The docs include a much broader OpenAPI definition covering users, quests, leaderboards, crafting, guilds,
+              notifications, and webhook flows.
+            </p>
+          </details>
+          <details>
+            <summary>What is the domain situation?</summary>
+            <p>
+              The GCP project can host the site, but `rook.ai` cannot be purchased through Google Cloud Domains because `.ai`
+              is unsupported there. The site can still be deployed on Cloud Run now and mapped later once the domain is
+              purchased elsewhere and verified.
+            </p>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <strong>Rook</strong>
+        <p>Built for teams that want engineering motion to be obvious.</p>
+      </div>
+      <div class="footer-links">
+        <a href="/docs">Docs</a>
+        <a href="https://github.com/TypeTenzinHoTT/rook">GitHub</a>
+        <a href="https://www.npmjs.com/package/rook-rpg">npm</a>
+        <a href="mailto:tarun@octave-x.com">Contact</a>
+      </div>
+    </footer>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

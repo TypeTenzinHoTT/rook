@@ -38,6 +38,8 @@ const mimeTypes = new Map([
   ['.webmanifest', 'application/manifest+json; charset=utf-8']
 ]);
 
+const staticAssetPaths = new Set(['/app.js', '/favicon.svg', '/styles.css']);
+
 function normalizeBasePath(value) {
   if (!value || value === '/') return '/';
   return value.endsWith('/') ? value.slice(0, -1) : value;
@@ -46,6 +48,13 @@ function normalizeBasePath(value) {
 function matchesDocsBasePath(pathname) {
   if (docsBasePath === '/') return true;
   return pathname === docsBasePath || pathname.startsWith(`${docsBasePath}/`);
+}
+
+function shouldProxyToDocs(pathname) {
+  if (matchesDocsBasePath(pathname)) return true;
+  if (pathname === '/' || pathname === '/healthz') return false;
+  if (staticAssetPaths.has(pathname)) return false;
+  return path.extname(pathname) === '';
 }
 
 function buildUpstreamPath(pathname) {
@@ -191,7 +200,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (matchesDocsBasePath(requestUrl.pathname)) {
+    if (shouldProxyToDocs(requestUrl.pathname)) {
       await proxyDocs(req, res, requestUrl);
       return;
     }

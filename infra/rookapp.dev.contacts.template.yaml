@@ -1,0 +1,12 @@
+allContacts:
+  email: 'tarun@octave-x.com'
+  phoneNumber: '+1.5555555555'
+  postalAddress:
+    regionCode: 'US'
+    postalCode: '00000'
+    administrativeArea: 'CA'
+    locality: 'City'
+    addressLines:
+      - '123 Example Street'
+    recipients:
+      - 'Tarun'

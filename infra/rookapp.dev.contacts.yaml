@@ -1,0 +1,13 @@
+allContacts:
+  email: 'tarun@octave-x.com'
+  phoneNumber: '+15856905070'
+  postalAddress:
+    regionCode: 'US'
+    postalCode: '14586'
+    administrativeArea: 'NY'
+    locality: 'West Henrietta'
+    addressLines:
+      - '3948 East River Road'
+      - 'Bldg 2-2108'
+    recipients:
+      - 'TARUN MITTAL'

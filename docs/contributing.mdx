@@ -1,0 +1,59 @@
+---
+title: "Contributing"
+description: "Contribute code, docs, and product polish back to the open-source Rook project."
+---
+
+# Contributing To Rook
+
+Rook is an MIT-licensed open-source project. Good contributions include product polish, docs depth, API cleanup, tests, and gameplay tuning.
+
+## Local Contribution Loop
+
+```bash
+git clone https://github.com/TypeTenzinHoTT/rook.git
+cd rook
+npm install
+cd backend && npm install && cd ..
+```
+
+## Useful Checks
+
+For the CLI:
+
+```bash
+npm run build
+```
+
+For docs:
+
+```bash
+cd docs
+mint validate
+mint broken-links
+mint openapi-check api-reference/openapi.json
+```
+
+## Areas That Benefit From Contributions
+
+- auth and permission enforcement for the backend
+- broader test coverage across CLI and route behavior
+- richer crafting content and more quest types
+- more reliable webhook onboarding flows
+- better docs examples and deployment guides
+
+## Documentation Style
+
+- Prefer direct instructions over abstract prose.
+- Document current behavior, not aspirational behavior.
+- Call out mismatches between marketing copy and checked-in code when they matter operationally.
+- Include command examples that a contributor can run unchanged.
+
+## Pull Requests
+
+When opening a PR:
+
+1. describe the user-facing change clearly
+2. note any backend or schema implications
+3. include docs updates when command behavior or API shape changes
+
+If your change touches the Mintlify site, preview it locally before pushing.

@@ -1,25 +1,52 @@
 ---
 title: "API Reference"
-description: "Rook backend REST API documentation"
+description: "REST and realtime contract for the self-hostable Rook backend."
 ---
+
+# API Overview
 
 ## Base URL
 
-The Rook API is available at your backend deployment URL:
-
-```
+```text
 https://your-deployment-url/api
 ```
 
-## Authentication
+For local development the default is:
 
-All authenticated endpoints require a Bearer token in the Authorization header. The token is the user's GitHub Personal Access Token, set during `rook login`.
-
-```bash
-Authorization: Bearer ghp_xxxxxxxxxxxx
+```text
+http://localhost:4000/api
 ```
 
-## Core Endpoints
+## Auth Model In The Current Code
+
+<Warning>
+The checked-in backend does not currently enforce bearer-token auth on most routes. The CLI sends `Authorization: Bearer ...`, but self-hosters should treat the API as trusted-boundary infrastructure until auth middleware is added.
+</Warning>
+
+Authentication-related behavior that does exist today:
+
+- `POST /users/register` stores the GitHub token you provide during onboarding.
+- `POST /github/webhooks` expects a GitHub token in the request body so it can create repository webhooks with Octokit.
+- `POST /webhooks/github` verifies `x-hub-signature-256` only when `GITHUB_WEBHOOK_SECRET` is configured.
+
+## What The API Covers
+
+<CardGroup cols={2}>
+  <Card title="Users & Progression" icon="badge-plus">
+    Registration, stats, XP, activity history, loot, and prestige.
+  </Card>
+  <Card title="Quests & Leaderboards" icon="sword">
+    Daily boards, weekly bosses, and both global and friends leaderboards.
+  </Card>
+  <Card title="Social & Guilds" icon="users">
+    Friends graph, guild lifecycle, guild summary, and guild quests.
+  </Card>
+  <Card title="Integrations" icon="webhook">
+    GitHub webhook setup, GitHub event ingestion, and notification webhook storage.
+  </Card>
+</CardGroup>
+
+## Endpoint Groups
 
 ### Users
 
@@ -29,8 +56,10 @@ Authorization: Bearer ghp_xxxxxxxxxxxx
 | `GET` | `/users/:userId/stats` | Get full user stats |
 | `POST` | `/users/:userId/xp` | Award XP |
 | `GET` | `/users/:userId/activity` | XP activity log |
+| `GET` | `/users/:userId/xp` | XP history alias |
 | `GET` | `/users/:userId/loot` | User inventory |
 | `POST` | `/users/:userId/prestige` | Prestige reset |
+| `POST` | `/users/:userId/achievements/:achievementId/share` | Share URL generation |
 
 ### Quests
 
@@ -54,18 +83,28 @@ Authorization: Bearer ghp_xxxxxxxxxxxx
 | `GET` | `/users/:userId/friends` | List friends |
 | `POST` | `/users/:userId/friends` | Add friend |
 | `DELETE` | `/users/:userId/friends/:friendId` | Remove friend |
-| `POST` | `/users/:userId/achievements/:id/share` | Share achievement |
 
-### Guilds
+### Crafting & Guilds
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| `GET` | `/crafting/recipes` | List craftable recipes |
+| `POST` | `/crafting/:userId/craft/:recipeCode` | Craft a recipe |
 | `POST` | `/guilds/create` | Create a guild |
 | `POST` | `/guilds/join` | Join a guild |
 | `POST` | `/guilds/leave` | Leave guild |
 | `POST` | `/guilds/invite` | Invite user |
 | `GET` | `/guilds/user/:userId` | User's guild |
 | `GET` | `/guilds/:guildId` | Guild details |
+| `GET` | `/guilds/:guildId/quests` | Guild quests |
+
+### Notifications
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/notifications/:userId/integrations` | List saved integrations |
+| `POST` | `/notifications/:userId/integrations` | Save Slack or Discord webhook |
+| `DELETE` | `/notifications/:userId/integrations/:type` | Remove integration |
 
 ### Webhooks
 
@@ -73,16 +112,22 @@ Authorization: Bearer ghp_xxxxxxxxxxxx
 |--------|----------|-------------|
 | `POST` | `/webhooks/github` | GitHub webhook receiver |
 | `POST` | `/github/webhooks` | Auto-configure repo webhook |
-
-### Health
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
 | `GET` | `/health` | Health check |
 
 ## WebSocket Events
 
-Rook uses Socket.io for real-time updates:
+Connect to the server root, not the `/api` prefix:
 
-- `leaderboard:update` - Broadcast when leaderboard changes
-- Connect to the base server URL (not `/api`) for WebSocket connections
+```text
+https://your-deployment-url
+```
+
+The backend emits:
+
+- `leaderboard:update`
+- `loot`
+- `craft`
+- `battle:update`
+- `battle:win`
+
+See the [Realtime API](/api-reference/realtime) page for event payload examples.

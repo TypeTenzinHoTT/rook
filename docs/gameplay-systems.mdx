@@ -1,0 +1,134 @@
+---
+title: "Gameplay Systems"
+description: "Exact progression, quest, loot, crafting, guild, and prestige behavior from the current implementation."
+---
+
+# Rules In The Current Build
+
+This page documents the mechanics implemented in the checked-in code, not just the marketing intent.
+
+## Base XP Values
+
+| Activity | Base XP | Source |
+|----------|---------|--------|
+| Push commit | 50 per commit in webhook payload | `backend/webhooks/github.js` |
+| Pull request opened | 100 | `backend/webhooks/github.js` |
+| Pull request merged | 200 | `backend/webhooks/github.js` |
+| Pull request review submitted | 75 | `backend/webhooks/github.js` |
+| Issue opened | 25 | `backend/webhooks/github.js` |
+| Issue closed | 100 | `backend/webhooks/github.js` |
+| Quest completion | quest-dependent | `backend/lib/quests.js` |
+
+## Level Curve
+
+The level formula used in both CLI and backend helpers is:
+
+```text
+level = floor(sqrt(totalXp / 1000)) + 1
+```
+
+That means each level requires progressively more XP than the previous one. The CLI progress bar is based on the quadratic threshold between the current and next level.
+
+## Quest Boards
+
+### Daily quests
+
+- Make 3 commits: 150 XP
+- Open 1 PR: 100 XP
+- Review 2 PRs: 150 XP
+- Close 1 issue: 100 XP
+- Maintain your streak: 50 XP
+
+### Weekly boss quests
+
+- Make 20 commits this week: 500 XP
+- Merge 3 PRs this week: 600 XP
+- Earn 1000 XP this week: 1000 XP
+
+Daily quests reset on `CURRENT_DATE` in PostgreSQL. Weekly quests are materialized against the current week.
+
+## Quest Streak Bonuses
+
+Quest streaks increase only when you clear the full daily board on consecutive UTC days.
+
+| Streak tier | Effect |
+|-------------|--------|
+| 1 day | `+5%` XP |
+| 3 days | `+10%` XP |
+| 7 days | `+10%` XP and `+1` extra loot drop |
+| 14 days | `+10%` XP, `+1` extra loot drop, one guaranteed rare drop per day |
+| 30 days | `+10%` XP, `+1` extra loot drop, one guaranteed legendary drop per day |
+
+## Loot System
+
+The backend seeds these starter items:
+
+| Code | Item | Rarity |
+|------|------|--------|
+| `wood_log` | Wood Log | common |
+| `merge_brick` | Merge Brick | rare |
+| `review_crystal` | Insight Crystal | rare |
+| `bugfix_shard` | Bugfix Shard | epic |
+| `golden_flame` | Golden Flame | legendary |
+
+The luck meter increases after common drops and resets after rare-or-better drops. Rare, epic, and legendary weights are multiplied by `1 + luckMeter * 0.005`.
+
+## Crafting
+
+Current seeded recipes:
+
+| Recipe | Inputs | Output |
+|--------|--------|--------|
+| `iron_blade` | `3x wood_log`, `1x merge_brick` | `review_crystal` |
+| `wisdom_orb` | `2x review_crystal`, `1x wood_log` | `bugfix_shard` |
+| `phoenix_core` | `1x golden_flame`, `2x bugfix_shard` | `golden_flame` |
+
+Crafting skill thresholds:
+
+| Crafting level | Required crafting XP | Perk |
+|----------------|----------------------|------|
+| 1 | 0 | none |
+| 2 | 100 | `10%` duplicate craft chance |
+| 3 | 250 | `20%` ingredient discount |
+| 4 | 500 | `5%` chance to upgrade output rarity |
+
+Each craft grants `10` crafting XP.
+
+## Guild Bonus
+
+Guild XP bonuses are based on active guildmates, excluding the current user:
+
+- Active window: last 3 days
+- Bonus: `1%` XP per active guildmate
+- Cap: `10%`
+
+The summary shown in `rook guild stats` is derived from `backend/lib/guilds.js`.
+
+## Prestige
+
+Prestige unlocks at level `20`.
+
+Each prestige reset currently:
+
+- sets `total_xp` to `0`
+- resets activity streaks
+- resets quest streak state
+- records one permanent perk bundle
+
+Per reset perks:
+
+- `+2%` XP gain
+- `+1` rare-or-better daily drop
+- `-1%` crafting ingredient discount
+
+## PR Battles And Notifications
+
+The stats and leaderboard flows also surface:
+
+- PR battle updates
+- loot drops
+- crafting completions
+- level-up notifications
+- weekly boss notifications
+
+Those are broadcast through Socket.io and optionally mirrored into Slack or Discord integrations if you configure them.

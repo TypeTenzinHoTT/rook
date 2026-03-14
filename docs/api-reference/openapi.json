@@ -2,13 +2,13 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Rook API",
-    "description": "The Developer's Roguelike - backend API for tracking XP, quests, loot, guilds, and leaderboards",
     "version": "0.1.0",
+    "description": "REST API for the Rook developer roguelike backend. The current implementation is self-host oriented and does not yet enforce auth middleware on most routes.",
+    "contact": {
+      "email": "tarun@octave-x.com"
+    },
     "license": {
       "name": "MIT"
-    },
-    "contact": {
-      "email": "tarun@chromaflow.ai"
     }
   },
   "servers": [
@@ -21,29 +21,28 @@
       "description": "Local development"
     }
   ],
-  "security": [
-    {
-      "bearerAuth": []
-    }
+  "tags": [
+    { "name": "Users" },
+    { "name": "Quests" },
+    { "name": "Leaderboard" },
+    { "name": "Social" },
+    { "name": "Crafting" },
+    { "name": "Guilds" },
+    { "name": "Notifications" },
+    { "name": "Integrations" },
+    { "name": "System" }
   ],
   "paths": {
     "/users/register": {
       "post": {
-        "summary": "Register a new user",
-        "description": "Register a user with their GitHub credentials",
+        "tags": ["Users"],
+        "summary": "Register or update a user",
+        "operationId": "registerUser",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["githubId", "username", "token"],
-                "properties": {
-                  "githubId": { "type": "string", "description": "GitHub user ID" },
-                  "username": { "type": "string", "description": "GitHub username" },
-                  "token": { "type": "string", "description": "GitHub PAT" }
-                }
-              }
+              "schema": { "$ref": "#/components/schemas/RegisterUserRequest" }
             }
           }
         },
@@ -52,20 +51,525 @@
             "description": "User registered",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/User" }
+                "schema": { "$ref": "#/components/schemas/RegisterUserResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/users/{userId}/stats": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get full user stats",
+        "operationId": "getUserStats",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "User stats payload",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserStats" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/users/{userId}/xp": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Award XP manually",
+        "operationId": "awardXp",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AwardXpRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "XP application result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AwardXpResponse" }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get XP history",
+        "operationId": "getXpHistory",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" },
+          { "$ref": "#/components/parameters/Limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent XP rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/XPActivity" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/users/{userId}/activity": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get recent activity",
+        "operationId": "getUserActivity",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" },
+          { "$ref": "#/components/parameters/Limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent activity rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/XPActivity" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/users/{userId}/loot": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get inventory",
+        "operationId": "getUserLoot",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inventory payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "inventory": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/LootItem" }
+                    }
+                  },
+                  "required": ["inventory"]
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/users/{userId}/achievements/{achievementId}/share": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Create a share URL for an achievement",
+        "operationId": "shareAchievement",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" },
+          { "$ref": "#/components/parameters/AchievementId" }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "platform": {
+                    "type": "string",
+                    "enum": ["twitter", "discord", "slack", "link"],
+                    "default": "link"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Share URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": { "type": "string", "format": "uri" }
+                  },
+                  "required": ["url"]
+                }
               }
             }
           }
         }
       }
     },
-    "/users/{userId}/stats": {
-      "get": {
-        "summary": "Get user stats",
-        "description": "Returns full user stats including level, XP, streak, achievements, quests, loot, and guild info",
+    "/users/{userId}/prestige": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Prestige a user",
+        "operationId": "prestigeUser",
         "parameters": [
+          { "$ref": "#/components/parameters/UserId" }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "level": {
+                    "type": "integer",
+                    "description": "Optional override level. If omitted, the backend computes the current level."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Prestige summary",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PrestigeSummary" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/users/{userId}/quests/daily": {
+      "get": {
+        "tags": ["Quests"],
+        "summary": "Get daily quests",
+        "operationId": "getDailyQuests",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily quests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Quest" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/users/{userId}/quests/weekly": {
+      "get": {
+        "tags": ["Quests"],
+        "summary": "Get weekly boss quests",
+        "operationId": "getWeeklyQuests",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Weekly quests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Quest" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/users/{userId}/quests/{questId}/complete": {
+      "post": {
+        "tags": ["Quests"],
+        "summary": "Complete a quest",
+        "operationId": "completeQuest",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" },
+          { "$ref": "#/components/parameters/QuestId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quest completion status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" },
+                    "xpAwarded": { "type": "integer" }
+                  },
+                  "required": ["status", "xpAwarded"]
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/leaderboard/global": {
+      "get": {
+        "tags": ["Leaderboard"],
+        "summary": "Get the global leaderboard",
+        "operationId": "getGlobalLeaderboard",
+        "parameters": [
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/Page" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Leaderboard entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/LeaderboardEntry" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/users/{userId}/leaderboard/friends": {
+      "get": {
+        "tags": ["Leaderboard"],
+        "summary": "Get the friends leaderboard",
+        "operationId": "getFriendsLeaderboard",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Friends leaderboard entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/LeaderboardEntry" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/users/{userId}/friends": {
+      "get": {
+        "tags": ["Social"],
+        "summary": "List friends",
+        "operationId": "listFriends",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Friends",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Friend" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Social"],
+        "summary": "Add a friend",
+        "operationId": "addFriend",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string" }
+                },
+                "required": ["username"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Friend created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" },
+                    "friendId": { "type": "integer" }
+                  },
+                  "required": ["status", "friendId"]
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/users/{userId}/friends/{friendId}": {
+      "delete": {
+        "tags": ["Social"],
+        "summary": "Remove a friend",
+        "operationId": "removeFriend",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" },
           {
-            "name": "userId",
+            "name": "friendId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Friend numeric ID or username"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Friend removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "removed" }
+                  },
+                  "required": ["status"]
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/github/webhooks": {
+      "post": {
+        "tags": ["Integrations"],
+        "summary": "Create a GitHub repository webhook",
+        "operationId": "createGithubWebhook",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "repoFullName": { "type": "string", "example": "owner/repo" },
+                  "token": { "type": "string", "description": "GitHub token used by Octokit" }
+                },
+                "required": ["repoFullName", "token"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook ensured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "repo": { "type": "string" }
+                  },
+                  "required": ["success", "repo"]
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/crafting/recipes": {
+      "get": {
+        "tags": ["Crafting"],
+        "summary": "List crafting recipes",
+        "operationId": "getCraftingRecipes",
+        "responses": {
+          "200": {
+            "description": "Crafting recipes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/CraftingRecipe" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/crafting/{userId}/craft/{recipeCode}": {
+      "post": {
+        "tags": ["Crafting"],
+        "summary": "Craft an item",
+        "operationId": "craftItem",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" },
+          {
+            "name": "recipeCode",
             "in": "path",
             "required": true,
             "schema": { "type": "string" }
@@ -73,10 +577,345 @@
         ],
         "responses": {
           "200": {
-            "description": "User stats",
+            "description": "Crafting result",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/UserStats" }
+                "schema": { "$ref": "#/components/schemas/CraftResult" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/guilds/create": {
+      "post": {
+        "tags": ["Guilds"],
+        "summary": "Create a guild",
+        "operationId": "createGuild",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "userId": { "type": "string" }
+                },
+                "required": ["name", "userId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Guild created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "guildId": { "type": "integer" },
+                    "name": { "type": "string" }
+                  },
+                  "required": ["guildId", "name"]
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/guilds/join": {
+      "post": {
+        "tags": ["Guilds"],
+        "summary": "Join a guild",
+        "operationId": "joinGuild",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "guildId": { "type": "integer" },
+                  "name": { "type": "string" },
+                  "userId": { "type": "string" }
+                },
+                "required": ["userId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Guild joined",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "guildId": { "type": "integer" }
+                  },
+                  "required": ["guildId"]
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/guilds/leave": {
+      "post": {
+        "tags": ["Guilds"],
+        "summary": "Leave the current guild",
+        "operationId": "leaveGuild",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": { "type": "string" }
+                },
+                "required": ["userId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Guild left",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "guildId": { "type": ["integer", "null"] }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/guilds/invite": {
+      "post": {
+        "tags": ["Guilds"],
+        "summary": "Invite a user to a guild",
+        "operationId": "inviteToGuild",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": { "type": "string" },
+                  "targetUserId": { "type": "string" },
+                  "targetUsername": { "type": "string" }
+                },
+                "required": ["userId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invitation stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "guildId": { "type": "integer" },
+                    "userId": { "type": "integer" }
+                  },
+                  "required": ["guildId", "userId"]
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/guilds/user/{userId}": {
+      "get": {
+        "tags": ["Guilds"],
+        "summary": "Get the guild summary for a user",
+        "operationId": "getUserGuild",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Guild summary or null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "type": "null" },
+                    { "$ref": "#/components/schemas/GuildSummary" }
+                  ]
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/guilds/{guildId}": {
+      "get": {
+        "tags": ["Guilds"],
+        "summary": "Get guild info",
+        "operationId": "getGuild",
+        "parameters": [
+          {
+            "name": "guildId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Guild info",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GuildInfo" }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/guilds/{guildId}/quests": {
+      "get": {
+        "tags": ["Guilds"],
+        "summary": "Get guild quests",
+        "operationId": "getGuildQuests",
+        "parameters": [
+          {
+            "name": "guildId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Guild quests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/GuildQuest" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/notifications/{userId}/integrations": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "List integrations",
+        "operationId": "listIntegrations",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved notification integrations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/NotificationIntegration" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Notifications"],
+        "summary": "Save or update an integration",
+        "operationId": "saveIntegration",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string", "enum": ["slack", "discord"] },
+                  "webhookUrl": { "type": "string", "format": "uri" }
+                },
+                "required": ["type", "webhookUrl"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated integrations list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/NotificationIntegration" }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/notifications/{userId}/integrations/{type}": {
+      "delete": {
+        "tags": ["Notifications"],
+        "summary": "Delete an integration",
+        "operationId": "deleteIntegration",
+        "parameters": [
+          { "$ref": "#/components/parameters/UserId" },
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "enum": ["slack", "discord"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated integrations list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/NotificationIntegration" }
+                }
               }
             }
           }
@@ -85,11 +924,47 @@
     },
     "/health": {
       "get": {
+        "tags": ["System"],
         "summary": "Health check",
-        "security": [],
+        "operationId": "healthCheck",
         "responses": {
           "200": {
-            "description": "Service healthy",
+            "description": "Healthy service",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" }
+                  },
+                  "required": ["status"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/github": {
+      "post": {
+        "tags": ["Integrations"],
+        "summary": "Receive GitHub webhook events",
+        "operationId": "githubWebhook",
+        "description": "Handles push, pull_request, issues, and pull_request_review events. Signature verification is enabled when GITHUB_WEBHOOK_SECRET is configured.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook accepted",
             "content": {
               "application/json": {
                 "schema": {
@@ -100,70 +975,354 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/webhooks/github": {
-      "post": {
-        "summary": "GitHub webhook receiver",
-        "description": "Receives GitHub webhook events (push, pull_request, issues, pull_request_review) and processes XP awards",
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "Webhook processed"
-          }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
         }
       }
     }
   },
   "components": {
+    "parameters": {
+      "UserId": {
+        "name": "userId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      },
+      "QuestId": {
+        "name": "questId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      },
+      "AchievementId": {
+        "name": "achievementId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "integer", "default": 10 }
+      },
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "integer", "default": 1 }
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "Error response",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    },
     "schemas": {
-      "User": {
+      "RegisterUserRequest": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "github_id": { "type": "string" },
+          "githubId": { "type": "string" },
+          "username": { "type": "string" },
+          "token": { "type": "string" }
+        },
+        "required": ["githubId", "username"]
+      },
+      "RegisterUserResponse": {
+        "type": "object",
+        "properties": {
+          "userId": { "type": "integer" },
           "username": { "type": "string" }
+        },
+        "required": ["userId", "username"]
+      },
+      "AwardXpRequest": {
+        "type": "object",
+        "properties": {
+          "amount": { "type": "integer", "default": 0 },
+          "reason": { "type": "string", "default": "activity" }
+        }
+      },
+      "AwardXpResponse": {
+        "type": "object",
+        "properties": {
+          "baseXp": { "type": "integer" },
+          "appliedXp": { "type": "integer" },
+          "xpMultiplier": { "type": "number" },
+          "streak": { "type": "integer" },
+          "level": { "type": "integer" },
+          "totalXp": { "type": "integer" },
+          "questStreak": { "type": "integer" },
+          "questStreakBonus": { "type": "string" }
         }
       },
       "UserStats": {
         "type": "object",
         "properties": {
-          "userId": { "type": "string" },
+          "userId": { "type": "integer" },
           "username": { "type": "string" },
           "level": { "type": "integer" },
           "currentXp": { "type": "integer" },
           "totalXp": { "type": "integer" },
           "streak": { "type": "integer" },
+          "lastActive": { "type": ["string", "null"], "format": "date-time" },
+          "questStreak": { "type": "integer" },
+          "questStreakBonus": { "type": "string" },
           "achievements": {
             "type": "array",
             "items": { "$ref": "#/components/schemas/Achievement" }
-          }
-        }
+          },
+          "coachTip": { "type": ["string", "null"] },
+          "recentActivity": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/XPActivity" }
+          },
+          "recentLoot": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/LootItem" }
+          },
+          "craftingRecipes": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CraftingRecipe" }
+          },
+          "crafting": {
+            "type": "object",
+            "properties": {
+              "level": { "type": "integer" },
+              "xp": { "type": "integer" },
+              "perks": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "luckMeter": { "type": "integer" },
+          "prBattles": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PRBattle" }
+          },
+          "guild": {
+            "oneOf": [
+              { "type": "null" },
+              { "$ref": "#/components/schemas/GuildSummary" }
+            ]
+          },
+          "prestige": { "$ref": "#/components/schemas/PrestigeSummary" }
+        },
+        "required": ["userId", "username", "level", "totalXp", "streak", "achievements"]
       },
       "Achievement": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
+          "id": { "type": "string" },
           "name": { "type": "string" },
           "description": { "type": "string" },
           "icon": { "type": "string" },
-          "rarity": { "type": "string" }
+          "rarity": { "type": "string", "enum": ["common", "rare", "epic", "legendary"] },
+          "unlockedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "XPActivity": {
+        "type": "object",
+        "properties": {
+          "amount": { "type": "integer" },
+          "reason": { "type": ["string", "null"] },
+          "activity_type": { "type": ["string", "null"] },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Quest": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "xpReward": { "type": "integer" },
+          "type": { "type": "string", "enum": ["daily", "weekly", "boss"] },
+          "completed": { "type": "boolean" },
+          "progress": {
+            "type": "object",
+            "properties": {
+              "current": { "type": "integer" },
+              "total": { "type": "integer" }
+            }
+          },
+          "deadline": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "LeaderboardEntry": {
+        "type": "object",
+        "properties": {
+          "rank": { "type": "integer" },
+          "username": { "type": "string" },
+          "totalXp": { "type": "integer" },
+          "achievements": { "type": "integer" },
+          "level": { "type": "integer" },
+          "streak": { "type": "integer" }
+        }
+      },
+      "Friend": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "username": { "type": "string" },
+          "streak": { "type": ["integer", "null"] }
+        }
+      },
+      "LootItem": {
+        "type": "object",
+        "properties": {
+          "itemId": { "type": "integer" },
+          "code": { "type": "string" },
+          "name": { "type": "string" },
+          "icon": { "type": "string" },
+          "rarity": { "type": "string", "enum": ["common", "rare", "epic", "legendary"] },
+          "quantity": { "type": "integer" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "CraftingRecipe": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "itemId": { "type": "integer" },
+                "code": { "type": "string" },
+                "name": { "type": "string" },
+                "qty": { "type": "integer" },
+                "icon": { "type": "string" }
+              }
+            }
+          },
+          "result": {
+            "type": "object",
+            "properties": {
+              "itemId": { "type": "integer" },
+              "code": { "type": "string" },
+              "name": { "type": "string" },
+              "icon": { "type": "string" }
+            }
+          }
+        }
+      },
+      "CraftResult": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "crafted": { "type": "string" },
+          "icon": { "type": "string" },
+          "quantity": { "type": "integer" },
+          "bonusQuantity": { "type": "integer" },
+          "upgraded": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "integer" },
+                  "name": { "type": "string" },
+                  "ascii_icon": { "type": "string" },
+                  "rarity": { "type": "string" }
+                }
+              }
+            ]
+          },
+          "craftingLevel": { "type": "integer" },
+          "craftingXp": { "type": "integer" }
+        }
+      },
+      "GuildSummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "members": { "type": "integer" },
+          "active": { "type": "integer" },
+          "bonus": { "type": "number" },
+          "multiplier": { "type": "number" }
+        }
+      },
+      "GuildInfo": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "user_id": { "type": "integer" },
+                "role": { "type": "string" },
+                "username": { "type": "string" },
+                "last_active": { "type": ["string", "null"], "format": "date-time" }
+              }
+            }
+          }
+        }
+      },
+      "GuildQuest": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "xp_reward": { "type": "integer" },
+          "progress_current": { "type": "integer" },
+          "progress_total": { "type": "integer" },
+          "refresh_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "NotificationIntegration": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["slack", "discord"] },
+          "webhook_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "PRBattle": {
+        "type": "object",
+        "properties": {
+          "opponent": { "type": "string" },
+          "status": { "type": "string" },
+          "battleId": { "type": "integer" }
+        }
+      },
+      "PrestigeSummary": {
+        "type": "object",
+        "properties": {
+          "count": { "type": "integer" },
+          "perks": {
+            "type": "object",
+            "properties": {
+              "xpBonus": { "type": "number" },
+              "rareDaily": { "type": "integer" },
+              "craftingDiscount": { "type": "number" }
+            }
+          },
+          "perkSummary": { "type": "string" }
         }
       },
       "Error": {
         "type": "object",
         "properties": {
-          "error": { "type": "string" },
-          "message": { "type": "string" }
-        }
-      }
-    },
-    "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer"
+          "error": { "type": "string" }
+        },
+        "required": ["error"]
       }
     }
   }

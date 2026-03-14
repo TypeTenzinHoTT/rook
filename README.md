@@ -35,7 +35,7 @@ This walks you through GitHub authentication and repo connection. Once set up, y
 | `rook prestige` | Reset at level 20+ for permanent perks |
 | `rook connect` | Connect GitHub repos via webhooks |
 | `rook history` | XP activity timeline |
-| `rook share` | Share achievements to Twitter/Discord/Slack |
+| `rook share` | Generate share links or shareable stats output |
 | `rook notify` | Configure social notifications |
 
 ### Leaderboard Options
@@ -83,8 +83,10 @@ npm start
 Point the CLI at your backend:
 
 ```bash
-rook login --api-url http://localhost:4000/api
+ROOK_API_URL=http://localhost:4000/api rook login
 ```
+
+Then keep the default API URL when prompted.
 
 ## API Reference
 

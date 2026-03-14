@@ -1,13 +1,17 @@
 ---
-title: "Development"
-description: "Set up Rook for local development and self-hosting"
+title: "Self-Hosting & Local Development"
+description: "Run the Rook backend locally, connect the CLI, and validate the Mintlify docs."
 ---
 
 <Info>
-  **Prerequisites**: Node.js 18+, PostgreSQL 14+
+  **Prerequisites**: Node.js 18+, PostgreSQL, and a GitHub token for the CLI onboarding flow.
 </Info>
 
-## Local Setup
+<Warning>
+The current backend does not enforce auth middleware on most REST endpoints. If you self-host Rook beyond local development, place it behind a trusted network boundary, gateway, or your own auth layer.
+</Warning>
+
+## Run The Project Locally
 
 <Steps>
 <Step title="Clone the repository">
@@ -19,125 +23,142 @@ cd rook
 
 </Step>
 
-<Step title="Install CLI dependencies">
+<Step title="Install the dependencies">
 
 ```bash
 npm install
-```
-
-</Step>
-
-<Step title="Build the CLI">
-
-```bash
-npm run build
-```
-
-</Step>
-
-<Step title="Set up the backend">
-
-```bash
 cd backend
 npm install
+cd ..
 ```
 
-Create a `backend/.env` file:
+</Step>
+
+<Step title="Create the database schema">
+
+```bash
+createdb rook
+psql postgres://localhost/rook -f backend/schema.sql
+for f in backend/migrations/*.sql; do
+  psql postgres://localhost/rook -f "$f"
+done
+```
+
+The repository ships a base schema in `backend/schema.sql` and additive migrations in `backend/migrations/`.
+
+</Step>
+
+<Step title="Configure the backend">
+
+Create `backend/.env` from `backend/.env.example`:
 
 ```bash
 DATABASE_URL=postgres://user:pass@localhost:5432/rook
 PORT=4000
 GITHUB_WEBHOOK_SECRET=your_secret_here
-# Optional: OPENAI_API_KEY=sk-... (enables coach tips in rook stats)
+# Optional: OPENAI_API_KEY=sk-...   # enables coach tips
+# Optional: PGSSL=1                 # for managed PostgreSQL with SSL
+# Optional: PUBLIC_API_URL=https://your-api.example.com/api
+# Optional: WEBHOOK_PUBLIC_URL=https://your-api.example.com/api/webhooks/github
 ```
 
 </Step>
 
-<Step title="Initialize the database">
+<Step title="Start the services">
 
-Run the schema and migrations against your PostgreSQL instance:
-
-```bash
-psql $DATABASE_URL -f schema.sql
-for f in migrations/*.sql; do psql $DATABASE_URL -f "$f"; done
-```
-
-</Step>
-
-<Step title="Start the backend">
+In one terminal, run the backend:
 
 ```bash
+cd backend
 npm start
 ```
 
-The server runs at `http://localhost:4000`.
+In another terminal, run the CLI in development mode or build it:
+
+```bash
+npm run build
+# or
+npm run dev -- stats
+```
+
+The backend listens on `http://localhost:4000`, and the API base URL is `http://localhost:4000/api`.
 
 </Step>
 
-<Step title="Point the CLI at local backend">
+<Step title="Point the CLI at your backend">
 
 ```bash
-rook login --api-url http://localhost:4000/api
+ROOK_API_URL=http://localhost:4000/api rook login
 ```
+
+When prompted, keep the default API URL or enter your deployed URL.
 
 </Step>
 </Steps>
 
-## CLI Commands Reference
+## What The Backend Actually Runs
 
-| Command | Description |
-|---------|-------------|
-| `rook init` | Full onboarding: login + connect repos |
-| `rook login` | Authenticate with GitHub PAT |
-| `rook stats` | Level, XP bar, streak, achievements, coach tip |
-| `rook dungeon` | Daily quests + weekly boss quests |
-| `rook leaderboard [--friends] [--watch]` | Rankings with optional live refresh |
-| `rook friends [list\|add\|remove]` | Manage your party |
-| `rook inventory` | View loot drops |
-| `rook craft` | Craft items from loot |
-| `rook guild [create\|join\|invite\|leave\|stats]` | Guild management |
-| `rook prestige` | Reset at level 20+ for permanent perks |
-| `rook connect` | Set up GitHub webhooks |
-| `rook history` | XP activity log |
-| `rook share <target> [id]` | Share to Twitter/Discord/Slack |
-| `rook notify` | Configure notification integrations |
+| Layer | Current stack |
+|------|---------------|
+| CLI | TypeScript, Commander, Chalk, Boxen, Ora, Inquirer |
+| Backend | Node.js ESM, Express, Socket.io |
+| Database | PostgreSQL |
+| GitHub integration | Octokit + webhook receiver |
+| Docs | Mintlify in `docs/` |
 
 ## Project Structure
 
-```
+```text
 rook/
   src/             # TypeScript CLI source
-    commands/      # Individual command handlers
-    lib/           # API client, config, UI utilities
-    types/         # TypeScript interfaces
+    commands/      # User-facing terminal commands
+    lib/           # API client, config, UI, progression helpers
+    types/         # Shared CLI-facing types
   backend/
     server.js      # Express entry point
-    routes/        # API route handlers
-    lib/           # Business logic (XP, quests, loot, guilds)
-    migrations/    # SQL migration files
+    routes/        # REST route handlers
+    webhooks/      # GitHub webhook handler
+    lib/           # XP, quests, loot, guilds, crafting, prestige
+    migrations/    # SQL migrations after schema.sql
     schema.sql     # Base database schema
   docs/            # Mintlify documentation
 ```
 
-## Architecture
+## GitHub Webhook Setup
 
-```
-GitHub Webhooks → Backend (Express + PostgreSQL + Socket.io) → CLI (Commander.js)
-```
+For automatic XP from GitHub activity:
 
-- **Webhooks** capture push, PR, issue, and review events
-- **Backend** calculates XP, manages quests, handles loot RNG, and broadcasts updates
-- **CLI** displays progress with styled terminal output (chalk, boxen, ora)
-- **Socket.io** powers real-time leaderboard updates when using `--watch`
+1. Deploy the backend somewhere GitHub can reach.
+2. Set `PUBLIC_API_URL` or `WEBHOOK_PUBLIC_URL`.
+3. Run `rook connect`.
+4. Select repositories from the interactive checklist.
 
-## Documentation Development
+The backend route `/api/github/webhooks` will create repository webhooks pointing at `/api/webhooks/github`.
 
-To preview docs locally:
+## Local Docs Workflow
+
+Mintlify's current CLI commands are:
 
 ```bash
-npm i -g mint
 cd docs
+mint validate
+mint broken-links
+mint openapi-check api-reference/openapi.json
 mint dev
 ```
 
-Preview at `http://localhost:3000`.
+Use `mint dev` for a local preview and `mint validate` before publishing changes.
+
+## Deployment Notes
+
+<AccordionGroup>
+  <Accordion title="Why `PUBLIC_API_URL` matters">
+    The webhook-registration route uses `PUBLIC_API_URL` to compute the callback URL that gets installed in GitHub. If this points at `localhost`, GitHub cannot deliver events.
+  </Accordion>
+  <Accordion title="Why `WEBHOOK_PUBLIC_URL` exists">
+    If the externally reachable webhook endpoint differs from the public API URL, set `WEBHOOK_PUBLIC_URL` explicitly.
+  </Accordion>
+  <Accordion title="What the backend seeds on startup">
+    `server.js` seeds achievements, loot items, and crafting recipes before listening for traffic.
+  </Accordion>
+</AccordionGroup>

@@ -2,10 +2,14 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "Rook",
+  "description": "Rook is an open-source CLI and self-hostable backend that turns GitHub activity into XP, quests, loot, leaderboards, guild bonuses, and prestige loops.",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#0F766E",
+    "light": "#2DD4BF",
+    "dark": "#134E4A"
+  },
+  "background": {
+    "decoration": "gradient"
   },
   "favicon": "/favicon.svg",
   "navigation": {
@@ -14,11 +18,30 @@
         "tab": "Guides",
         "groups": [
           {
-            "group": "Getting Started",
+            "group": "Start Here",
             "pages": [
               "index",
-              "quickstart",
-              "development"
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Using Rook",
+            "pages": [
+              "cli-reference",
+              "gameplay-systems"
+            ]
+          },
+          {
+            "group": "Operating Rook",
+            "pages": [
+              "development",
+              "architecture"
+            ]
+          },
+          {
+            "group": "Open Source",
+            "pages": [
+              "contributing"
             ]
           }
         ]
@@ -29,16 +52,58 @@
           {
             "group": "Overview",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/introduction",
+              "api-reference/realtime"
             ]
           },
           {
-            "group": "Endpoints",
+            "group": "Users & Progression",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/endpoint/register-user",
+              "api-reference/endpoint/get-user-stats",
+              "api-reference/endpoint/award-xp",
+              "api-reference/endpoint/get-activity",
+              "api-reference/endpoint/get-loot",
+              "api-reference/endpoint/prestige",
+              "api-reference/endpoint/share-achievement"
+            ]
+          },
+          {
+            "group": "Quests & Social",
+            "pages": [
+              "api-reference/endpoint/get-daily-quests",
+              "api-reference/endpoint/get-weekly-quests",
+              "api-reference/endpoint/complete-quest",
+              "api-reference/endpoint/global-leaderboard",
+              "api-reference/endpoint/friends-leaderboard",
+              "api-reference/endpoint/list-friends",
+              "api-reference/endpoint/add-friend",
+              "api-reference/endpoint/remove-friend"
+            ]
+          },
+          {
+            "group": "Integrations & Guilds",
+            "pages": [
+              "api-reference/endpoint/create-webhook",
+              "api-reference/endpoint/get-recipes",
+              "api-reference/endpoint/craft-item",
+              "api-reference/endpoint/create-guild",
+              "api-reference/endpoint/join-guild",
+              "api-reference/endpoint/leave-guild",
+              "api-reference/endpoint/invite-to-guild",
+              "api-reference/endpoint/get-user-guild",
+              "api-reference/endpoint/get-guild",
+              "api-reference/endpoint/get-guild-quests",
+              "api-reference/endpoint/list-integrations",
+              "api-reference/endpoint/save-integration",
+              "api-reference/endpoint/delete-integration"
+            ]
+          },
+          {
+            "group": "Platform",
+            "pages": [
+              "api-reference/endpoint/health",
+              "api-reference/endpoint/github-webhook"
             ]
           }
         ]
@@ -63,16 +128,19 @@
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
+  "appearance": {
+    "default": "system"
+  },
   "navbar": {
     "links": [
       {
         "label": "Support",
-        "href": "mailto:tarun@chromaflow.ai"
+        "href": "mailto:tarun@octave-x.com"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Get Started",
+      "label": "Launch Guide",
       "href": "/quickstart"
     }
   },

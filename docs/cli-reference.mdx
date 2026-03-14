@@ -1,0 +1,110 @@
+---
+title: "CLI Reference"
+description: "Command-by-command reference for the current Rook CLI."
+---
+
+# Command Surface
+
+The CLI entrypoint lives in `src/index.ts` and currently exposes the commands below.
+
+<Info>
+Most commands require a saved config in `~/.rook/config.json`. `rook login` and `rook init` create that file.
+</Info>
+
+## Core Commands
+
+| Command | Arguments / options | Purpose |
+|---------|---------------------|---------|
+| `rook init` | none | Login plus optional repo connection |
+| `rook login` | none | Verify GitHub token, register user, save config |
+| `rook stats` | none | Show XP, streaks, achievements, crafting, guild, prestige, recent loot |
+| `rook dungeon` | none | Show daily quests and weekly bosses |
+| `rook leaderboard` | `--friends`, `--page`, `--limit`, `--watch` | Render leaderboards and optional live updates |
+| `rook history` | none | Show recent XP activity |
+| `rook connect` | none | List manageable repositories and create GitHub webhooks |
+
+## Economy & Progression
+
+| Command | Purpose |
+|---------|---------|
+| `rook inventory` | List current loot inventory |
+| `rook craft` | Interactive recipe picker and craft flow |
+| `rook prestige` | Reset to level 1 at level 20+ in exchange for permanent perks |
+
+## Social Commands
+
+| Command | Arguments / options | Purpose |
+|---------|---------------------|---------|
+| `rook friends` | `[list|add|remove|leaderboard] [username]` | Manage friend graph and compare ranks |
+| `rook share` | `&lt;achievement|stats&gt; [achievementId] [--twitter|--discord|--slack]` | Produce share links or shareable stats output |
+| `rook notify` | interactive | Save Slack or Discord webhook URLs |
+
+## Guild Commands
+
+| Command | Arguments | Purpose |
+|---------|-----------|---------|
+| `rook guild create` | `[name]` | Create a guild |
+| `rook guild join` | `[name]` | Join by guild name |
+| `rook guild invite` | `[username]` | Invite another user |
+| `rook guild leave` | none | Leave the current guild |
+| `rook guild stats` | none | Show guild bonus and active-member count |
+
+## Typical Workflows
+
+### First run
+
+```bash
+npm install -g rook-rpg
+rook init
+rook stats
+```
+
+### Daily loop
+
+```bash
+rook dungeon
+rook stats
+rook history
+rook leaderboard --watch
+```
+
+### Team loop
+
+```bash
+rook friends add teammate-handle
+rook guild create shipping-party
+rook notify
+```
+
+## Config And Environment
+
+Rook stores local state in:
+
+```text
+~/.rook/config.json
+```
+
+Current fields:
+
+- `token`
+- `username`
+- `userId`
+- `apiUrl`
+
+The CLI also reads:
+
+- `ROOK_API_URL`: pre-fills the login prompt and client base URL
+
+## Behavior Notes From The Current Code
+
+<AccordionGroup>
+  <Accordion title="`rook leaderboard --watch` prefers websockets, then falls back to polling">
+    The CLI attempts a Socket.io connection to the server root. If the realtime transport fails, it refreshes the leaderboard every five seconds.
+  </Accordion>
+  <Accordion title="Crafting recipes are fetched from the stats payload in the CLI">
+    The backend exposes `/crafting/recipes`, but the current CLI primarily gets `craftingRecipes` from `/users/:userId/stats`.
+  </Accordion>
+  <Accordion title="`rook login` is fully interactive">
+    It does not currently declare Commander options such as `--api-url`. The API URL is collected through the prompt.
+  </Accordion>
+</AccordionGroup>

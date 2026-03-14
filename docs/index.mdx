@@ -1,56 +1,108 @@
 ---
-title: "Rook: The Developer's Roguelike"
-description: "Turn your daily developer workflow into an RPG adventure. Earn XP, complete quests, climb leaderboards, and level up."
+title: "Rook Documentation"
+description: "Ship code, earn XP, clear quests, and self-host the backend behind the open-source Rook CLI."
 ---
 
-## What is Rook?
+# Turn Developer Momentum Into a Game Loop
 
-Rook is a CLI tool that gamifies your GitHub workflow. Every commit, pull request, code review, and issue earns you XP. Complete daily quests, defeat weekly bosses, collect loot, craft items, and compete with your team on leaderboards.
+Rook is an open-source CLI plus a self-hostable backend that watches GitHub activity and turns it into progression.
+Commits, PRs, reviews, and issues become XP. Daily and weekly boards create goals. Loot, crafting, guilds, and prestige add longer-term loops. Socket.io pushes live updates back into the terminal while you work.
 
-<CardGroup cols={2}>
+<CardGroup cols={3}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Install and start earning XP in under 2 minutes.
+    Install the CLI, connect GitHub, and see the core loop in minutes.
   </Card>
-  <Card title="API Reference" icon="terminal" href="/api-reference/introduction">
-    Integrate with the Rook backend API.
+  <Card title="Self-Hosting" icon="server" href="/development">
+    Run the backend locally or in your own infrastructure.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Explore the REST and realtime surface exposed by the backend.
   </Card>
 </CardGroup>
 
-## Core Features
+<Info>
+This documentation reflects the public `main` branch of [`TypeTenzinHoTT/rook`](https://github.com/TypeTenzinHoTT/rook) and the local repository state reviewed on March 14, 2026.
+</Info>
+
+## What You Get
 
 <CardGroup cols={2}>
-  <Card title="XP & Levels" icon="arrow-up-right-dots">
-    Earn XP from commits, PRs, reviews, and issues. Level up with a progression curve that rewards consistency.
+  <Card title="CLI-first product" icon="terminal">
+    `rook stats`, `rook dungeon`, `rook inventory`, and `rook leaderboard` keep the experience in the terminal instead of sending you to a dashboard for every check-in.
   </Card>
-  <Card title="Daily Quests" icon="sword">
-    Five daily quests reset at midnight UTC. Complete them all to clear the board.
+  <Card title="Self-hostable backend" icon="database">
+    Express, PostgreSQL, and Socket.io power the progression engine and webhook ingestion.
   </Card>
-  <Card title="Weekly Bosses" icon="dragon">
-    Take on larger weekly objectives like merging 3 PRs or earning 1000 XP.
+  <Card title="GitHub-triggered progression" icon="git-pull-request">
+    Pushes, PRs, PR reviews, and issues feed XP, quests, loot, streaks, and PR battle updates.
+  </Card>
+  <Card title="Retention loops" icon="swords">
+    Quest streaks, luck meter growth, crafting skill, guild bonuses, and prestige keep the game loop compounding.
+  </Card>
+  <Card title="Open docs + OpenAPI" icon="book-open">
+    The docs site covers the repo structure, operating model, gameplay rules, and the backend contract.
+  </Card>
+  <Card title="Remote updates" icon="radio">
+    Leaderboard changes, loot drops, crafting completions, and PR battles can stream live over Socket.io.
+  </Card>
+</CardGroup>
+
+## How The Loop Works
+
+```mermaid
+flowchart LR
+  D[Developer ships code] --> G[GitHub event]
+  G --> W[/POST /api/webhooks/github]
+  W --> B[Rook backend]
+  B --> P[(PostgreSQL)]
+  B --> S[Socket.io events]
+  S --> C[Rook CLI]
+  C --> D
+```
+
+1. You authenticate the CLI with a GitHub token and point it at a Rook backend.
+2. `rook connect` creates GitHub webhooks for repos you manage.
+3. GitHub events hit the backend and award XP plus quest progress.
+4. XP bonuses from quest streaks, guild membership, and prestige are applied.
+5. Loot, crafting, leaderboard, and battle events are emitted over Socket.io.
+6. The CLI renders your current state through commands like `rook stats` and `rook leaderboard --watch`.
+
+## Core Systems
+
+<CardGroup cols={2}>
+  <Card title="Progression" icon="arrow-up-right">
+    Level = `floor(sqrt(totalXp / 1000)) + 1`. The curve gets steeper as total XP grows, which makes streak and multiplier systems matter.
+  </Card>
+  <Card title="Quests" icon="sword">
+    Five daily quests and three weekly boss quests are materialized in PostgreSQL and updated from GitHub activity.
   </Card>
   <Card title="Loot & Crafting" icon="gem">
-    RNG loot drops with a luck meter. Combine items at the crafting bench.
+    Seeded loot items, a luck meter, and three base recipes create a light crafting economy on top of work activity.
   </Card>
-  <Card title="Guilds" icon="users">
-    Form guilds for shared XP multipliers up to 10%. Compete in guild quests.
-  </Card>
-  <Card title="Prestige" icon="star">
-    Reset at level 20+ for permanent perks that compound with each reset.
+  <Card title="Social" icon="users">
+    Friends leaderboards, guild bonuses, guild quests, notifications, and share links turn solo usage into a team loop.
   </Card>
 </CardGroup>
 
-## How It Works
+## Read These Next
 
-```
-Push code → GitHub webhook → Rook backend → XP + loot → CLI displays progress
-```
+<CardGroup cols={2}>
+  <Card title="CLI Reference" icon="terminal-square" href="/cli-reference">
+    Review every command, its arguments, and the config file behavior.
+  </Card>
+  <Card title="Gameplay Systems" icon="flame" href="/gameplay-systems">
+    See the exact XP values, streak tiers, crafting perks, guild bonuses, and prestige math in the current codebase.
+  </Card>
+  <Card title="Self-Hosting Guide" icon="server" href="/development">
+    Stand up PostgreSQL, run the backend, and connect the CLI to your own deployment.
+  </Card>
+  <Card title="Architecture" icon="boxes" href="/architecture">
+    Map the main runtime paths in `src/` and `backend/`.
+  </Card>
+</CardGroup>
 
-1. **Connect** your GitHub repos with `rook connect`
-2. **Code** as you normally would
-3. **Check** your progress with `rook stats`, `rook dungeon`, or `rook leaderboard`
+## Support
 
-## Get Help
-
-<Card title="Support" icon="envelope" href="mailto:tarun@chromaflow.ai">
-  Questions or feedback? Reach out at tarun@chromaflow.ai
+<Card title="Support" icon="envelope" href="mailto:tarun@octave-x.com">
+  Questions, deployment help, or Mintlify publishing handoff: tarun@octave-x.com
 </Card>

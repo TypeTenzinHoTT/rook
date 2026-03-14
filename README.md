@@ -98,7 +98,7 @@ Config is stored at `~/.rook/config.json` and contains your GitHub token, user I
 
 ## Contributing
 
-Pull requests welcome. See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
+Pull requests welcome. See [CONTRIBUTOR.md](CONTRIBUTOR.md) for project contribution guidelines and [docs/contributing.mdx](docs/contributing.mdx) for the docs-focused guide.
 
 ## License
 

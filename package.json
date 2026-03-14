@@ -1,5 +1,5 @@
 {
-  "name": "rook-cli",
+  "name": "rook-rpg",
   "version": "0.1.0",
   "description": "The Developer's Roguelike CLI - gamify your GitHub workflow with XP, quests, loot, and leaderboards",
   "main": "dist/index.js",

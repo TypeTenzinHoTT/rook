@@ -103,7 +103,7 @@ CLI uses a persistent socket in:
 
 # 📡 Rook API Reference
 
-Base URL: https://rook-3658.onrender.com/api
+Base URL: Set via `PUBLIC_API_URL` environment variable (e.g., your GCP Cloud Run URL)
 
 ---
 

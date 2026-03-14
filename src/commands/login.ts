@@ -40,7 +40,7 @@ export async function login() {
         type: 'input',
         name: 'apiUrl',
         message: 'Rook API URL',
-        default: 'https://rook-3658.onrender.com/api'
+        default: process.env.ROOK_API_URL || 'http://localhost:4000/api'
       }
     ]);
 

@@ -1,7 +1,7 @@
 import express from 'express';
 import { Octokit } from 'octokit';
 
-const WEBHOOK_PATH = process.env.WEBHOOK_PUBLIC_URL || 'https://rook-3658.onrender.com/api/webhooks/github';
+const WEBHOOK_PATH = process.env.WEBHOOK_PUBLIC_URL || `${process.env.PUBLIC_API_URL || 'http://localhost:4000/api'}/webhooks/github`;
 
 export default (pool) => {
   const router = express.Router();

@@ -2,13 +2,13 @@
 
 A gamified CLI that turns daily developer work into an RPG adventure. Earn XP from GitHub activity, clear daily and weekly quests, climb leaderboards, craft items, and compete with friends.
 
-[![npm version](https://img.shields.io/npm/v/rook-cli.svg)](https://www.npmjs.com/package/rook-cli)
+[![npm version](https://img.shields.io/npm/v/rook-rpg.svg)](https://www.npmjs.com/package/rook-rpg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ## Install
 
 ```bash
-npm install -g rook-cli
+npm install -g rook-rpg
 ```
 
 ## Quickstart

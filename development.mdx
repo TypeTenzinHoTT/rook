@@ -1,0 +1,164 @@
+---
+title: "Self-Hosting & Local Development"
+description: "Run the Rook backend locally, connect the CLI, and validate the Mintlify docs."
+---
+
+<Info>
+  **Prerequisites**: Node.js 18+, PostgreSQL, and a GitHub token for the CLI onboarding flow.
+</Info>
+
+<Warning>
+The current backend does not enforce auth middleware on most REST endpoints. If you self-host Rook beyond local development, place it behind a trusted network boundary, gateway, or your own auth layer.
+</Warning>
+
+## Run The Project Locally
+
+<Steps>
+<Step title="Clone the repository">
+
+```bash
+git clone https://github.com/TypeTenzinHoTT/rook.git
+cd rook
+```
+
+</Step>
+
+<Step title="Install the dependencies">
+
+```bash
+npm install
+cd backend
+npm install
+cd ..
+```
+
+</Step>
+
+<Step title="Create the database schema">
+
+```bash
+createdb rook
+psql postgres://localhost/rook -f backend/schema.sql
+for f in backend/migrations/*.sql; do
+  psql postgres://localhost/rook -f "$f"
+done
+```
+
+The repository ships a base schema in `backend/schema.sql` and additive migrations in `backend/migrations/`.
+
+</Step>
+
+<Step title="Configure the backend">
+
+Create `backend/.env` from `backend/.env.example`:
+
+```bash
+DATABASE_URL=postgres://user:pass@localhost:5432/rook
+PORT=4000
+GITHUB_WEBHOOK_SECRET=your_secret_here
+# Optional: OPENAI_API_KEY=sk-...   # enables coach tips
+# Optional: PGSSL=1                 # for managed PostgreSQL with SSL
+# Optional: PUBLIC_API_URL=https://your-api.example.com/api
+# Optional: WEBHOOK_PUBLIC_URL=https://your-api.example.com/api/webhooks/github
+```
+
+</Step>
+
+<Step title="Start the services">
+
+In one terminal, run the backend:
+
+```bash
+cd backend
+npm start
+```
+
+In another terminal, run the CLI in development mode or build it:
+
+```bash
+npm run build
+# or
+npm run dev -- stats
+```
+
+The backend listens on `http://localhost:4000`, and the API base URL is `http://localhost:4000/api`.
+
+</Step>
+
+<Step title="Point the CLI at your backend">
+
+```bash
+ROOK_API_URL=http://localhost:4000/api rook login
+```
+
+When prompted, keep the default API URL or enter your deployed URL.
+
+</Step>
+</Steps>
+
+## What The Backend Actually Runs
+
+| Layer | Current stack |
+|------|---------------|
+| CLI | TypeScript, Commander, Chalk, Boxen, Ora, Inquirer |
+| Backend | Node.js ESM, Express, Socket.io |
+| Database | PostgreSQL |
+| GitHub integration | Octokit + webhook receiver |
+| Docs | Mintlify in `docs/` |
+
+## Project Structure
+
+```text
+rook/
+  src/             # TypeScript CLI source
+    commands/      # User-facing terminal commands
+    lib/           # API client, config, UI, progression helpers
+    types/         # Shared CLI-facing types
+  backend/
+    server.js      # Express entry point
+    routes/        # REST route handlers
+    webhooks/      # GitHub webhook handler
+    lib/           # XP, quests, loot, guilds, crafting, prestige
+    migrations/    # SQL migrations after schema.sql
+    schema.sql     # Base database schema
+  docs/            # Mintlify documentation
+```
+
+## GitHub Webhook Setup
+
+For automatic XP from GitHub activity:
+
+1. Deploy the backend somewhere GitHub can reach.
+2. Set `PUBLIC_API_URL` or `WEBHOOK_PUBLIC_URL`.
+3. Run `rook connect`.
+4. Select repositories from the interactive checklist.
+
+The backend route `/api/github/webhooks` will create repository webhooks pointing at `/api/webhooks/github`.
+
+## Local Docs Workflow
+
+Mintlify's current CLI commands are:
+
+```bash
+cd docs
+mint validate
+mint broken-links
+mint openapi-check api-reference/openapi.json
+mint dev
+```
+
+Use `mint dev` for a local preview and `mint validate` before publishing changes.
+
+## Deployment Notes
+
+<AccordionGroup>
+  <Accordion title="Why `PUBLIC_API_URL` matters">
+    The webhook-registration route uses `PUBLIC_API_URL` to compute the callback URL that gets installed in GitHub. If this points at `localhost`, GitHub cannot deliver events.
+  </Accordion>
+  <Accordion title="Why `WEBHOOK_PUBLIC_URL` exists">
+    If the externally reachable webhook endpoint differs from the public API URL, set `WEBHOOK_PUBLIC_URL` explicitly.
+  </Accordion>
+  <Accordion title="What the backend seeds on startup">
+    `server.js` seeds achievements, loot items, and crafting recipes before listening for traffic.
+  </Accordion>
+</AccordionGroup>

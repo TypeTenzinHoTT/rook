@@ -1,0 +1,94 @@
+---
+title: "Realtime API"
+description: "Socket.io connection behavior and event payloads emitted by the Rook backend."
+---
+
+# Socket.io Events
+
+The backend mounts Socket.io on the same server as Express.
+
+## Connect To The Server Root
+
+Use the base host, not the `/api` prefix:
+
+```text
+https://your-rook-host.example.com
+```
+
+That matches the current CLI behavior in `src/commands/leaderboard.ts`, which strips `/api` before opening the Socket.io connection.
+
+## Events
+
+### `leaderboard:update`
+
+Emitted when total XP changes.
+
+```json
+{
+  "userId": "42",
+  "totalXp": 3150,
+  "delta": 110
+}
+```
+
+### `loot`
+
+Emitted for random drops, quest streak bonus drops, and prestige bonus drops.
+
+```json
+{
+  "userId": "42",
+  "itemName": "Golden Flame",
+  "itemIcon": "🔥",
+  "quantity": 1,
+  "rarity": "legendary"
+}
+```
+
+### `craft`
+
+Emitted after a successful craft.
+
+```json
+{
+  "userId": "42",
+  "crafted": "Iron Blade",
+  "itemIcon": "🔷",
+  "newQuantity": 3,
+  "username": "tarun"
+}
+```
+
+### `battle:update`
+
+Emitted when a PR battle changes state.
+
+```json
+{
+  "battleId": 11,
+  "opponent": "teammate",
+  "status": "reviewed"
+}
+```
+
+### `battle:win`
+
+Emitted when a PR battle resolves.
+
+```json
+{
+  "battleId": 11,
+  "winner": 42,
+  "opponent": 7
+}
+```
+
+## CLI Behavior
+
+The current CLI listens to these events when you run:
+
+```bash
+rook leaderboard --watch
+```
+
+If the websocket transport fails, the CLI falls back to polling every five seconds.

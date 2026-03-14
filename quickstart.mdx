@@ -1,0 +1,137 @@
+---
+title: "Quickstart"
+description: "Install the CLI, connect GitHub repositories, and start seeing Rook's progression loop."
+---
+
+# Install And Start Tracking GitHub Work
+
+<Steps>
+<Step title="Install the CLI">
+
+```bash
+npm install -g rook-rpg
+```
+
+</Step>
+
+<Step title="Create a GitHub token">
+
+Rook currently expects a classic GitHub Personal Access Token during login.
+
+Recommended scopes:
+
+- `repo`
+- `read:user`
+- `admin:repo_hook`
+
+`admin:repo_hook` is needed if you want `rook connect` to create webhooks for you.
+
+<Tip>
+Generate the token from [GitHub Personal Access Tokens](https://github.com/settings/tokens).
+</Tip>
+
+</Step>
+
+<Step title="Run the onboarding flow">
+
+Run the setup wizard to authenticate with GitHub and connect your repos:
+
+```bash
+rook init
+```
+
+The wizard:
+
+1. Verifies your GitHub token.
+2. Registers you with the configured Rook backend.
+3. Saves local config in `~/.rook/config.json`.
+4. Offers to connect repositories by creating GitHub webhooks.
+
+</Step>
+
+<Step title="Use the default backend or your own">
+
+During `rook login` and `rook init`, the CLI prompts for the API URL.
+
+The default is:
+
+```bash
+http://localhost:4000/api
+```
+
+If you self-host, either enter your API URL at the prompt or prefill it via:
+
+```bash
+ROOK_API_URL=https://your-rook-api.example.com/api rook login
+```
+
+<Note>
+The current CLI does not expose an `--api-url` flag on `rook login`; the prompt and `ROOK_API_URL` environment variable are the supported paths in the checked-in code.
+</Note>
+
+</Step>
+
+<Step title="Verify the core loop">
+
+That's it. Push commits, open PRs, review code, and close issues. Rook tracks everything automatically.
+
+Check your progress:
+
+```bash
+rook stats        # Level, XP, streak, achievements
+rook dungeon      # Daily and weekly quests
+rook leaderboard  # See where you rank
+rook inventory    # View loot drops
+rook history      # Inspect recent XP events
+```
+
+</Step>
+</Steps>
+
+## What earns XP?
+
+| Activity | XP |
+|----------|-----|
+| Commit | 50 |
+| PR opened | 100 |
+| PR merged | 200 |
+| PR reviewed | 75 |
+| Issue opened | 25 |
+| Issue closed | 100 |
+
+Those are the base values used by the current webhook handler. The backend then multiplies them by quest streak, guild, and prestige bonuses where applicable.
+
+## First Commands To Learn
+
+| Command | What it shows |
+|---------|----------------|
+| `rook stats` | Your level, XP, streaks, achievements, loot, battles, and coach tip |
+| `rook dungeon` | Daily quests, weekly bosses, and quest streak context |
+| `rook leaderboard --watch` | Live leaderboard mode with Socket.io updates |
+| `rook connect` | Repository selector for webhook creation |
+| `rook craft` | Interactive crafting flow for recipe-based loot conversion |
+
+## Common Gotchas
+
+<AccordionGroup>
+  <Accordion title="The backend must be reachable from GitHub for webhook XP to work">
+    If you point the CLI at `localhost`, the login and stats flow will work locally, but GitHub cannot deliver webhooks to your machine unless you tunnel or deploy the backend publicly.
+  </Accordion>
+  <Accordion title="`rook connect` needs webhook permissions on the repository">
+    The command lists manageable repositories and attempts to create the Rook webhook at your backend's public webhook URL.
+  </Accordion>
+  <Accordion title="Live leaderboard mode connects to the base server URL">
+    `rook leaderboard --watch` strips `/api` from the configured API URL and connects to the Socket.io server root.
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Explore commands" icon="terminal" href="cli-reference">
+    See every command, argument, and workflow in the current CLI.
+  </Card>
+  <Card title="Self-host the backend" icon="server" href="development">
+    Stand up PostgreSQL and run your own Rook deployment.
+  </Card>
+</CardGroup>

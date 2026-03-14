@@ -90,7 +90,7 @@ Then keep the default API URL when prompted.
 
 ## API Reference
 
-See the full [API documentation](https://rook-docs.mintlify.app/api-reference/introduction).
+See the full [API documentation](https://rook.ai/api-reference/introduction).
 
 ## Configuration
 

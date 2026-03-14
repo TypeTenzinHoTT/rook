@@ -1,33 +1,88 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: "API Reference"
+description: "Rook backend REST API documentation"
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+## Base URL
 
-## Welcome
+The Rook API is available at your backend deployment URL:
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
-
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+```
+https://your-deployment-url/api
+```
 
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+All authenticated endpoints require a Bearer token in the Authorization header. The token is the user's GitHub Personal Access Token, set during `rook login`.
 
-```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
+```bash
+Authorization: Bearer ghp_xxxxxxxxxxxx
 ```
+
+## Core Endpoints
+
+### Users
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/users/register` | Register a new user |
+| `GET` | `/users/:userId/stats` | Get full user stats |
+| `POST` | `/users/:userId/xp` | Award XP |
+| `GET` | `/users/:userId/activity` | XP activity log |
+| `GET` | `/users/:userId/loot` | User inventory |
+| `POST` | `/users/:userId/prestige` | Prestige reset |
+
+### Quests
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/users/:userId/quests/daily` | List daily quests |
+| `GET` | `/users/:userId/quests/weekly` | List weekly boss quests |
+| `POST` | `/users/:userId/quests/:questId/complete` | Complete a quest |
+
+### Leaderboard
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/leaderboard/global` | Global leaderboard |
+| `GET` | `/users/:userId/leaderboard/friends` | Friends leaderboard |
+
+### Social
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/users/:userId/friends` | List friends |
+| `POST` | `/users/:userId/friends` | Add friend |
+| `DELETE` | `/users/:userId/friends/:friendId` | Remove friend |
+| `POST` | `/users/:userId/achievements/:id/share` | Share achievement |
+
+### Guilds
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/guilds/create` | Create a guild |
+| `POST` | `/guilds/join` | Join a guild |
+| `POST` | `/guilds/leave` | Leave guild |
+| `POST` | `/guilds/invite` | Invite user |
+| `GET` | `/guilds/user/:userId` | User's guild |
+| `GET` | `/guilds/:guildId` | Guild details |
+
+### Webhooks
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/webhooks/github` | GitHub webhook receiver |
+| `POST` | `/github/webhooks` | Auto-configure repo webhook |
+
+### Health
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Health check |
+
+## WebSocket Events
+
+Rook uses Socket.io for real-time updates:
+
+- `leaderboard:update` - Broadcast when leaderboard changes
+- Connect to the base server URL (not `/api`) for WebSocket connections

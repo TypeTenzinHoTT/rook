@@ -1,81 +1,103 @@
-DHSH
 # Rook: The Developer's Roguelike
 
-A gamified CLI that turns daily developer work into an RPG loop. Track XP from GitHub, clear daily/weekly quests, climb leaderboards, and share wins with friends.
+A gamified CLI that turns daily developer work into an RPG adventure. Earn XP from GitHub activity, clear daily and weekly quests, climb leaderboards, craft items, and compete with friends.
+
+[![npm version](https://img.shields.io/npm/v/rook-cli.svg)](https://www.npmjs.com/package/rook-cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+## Install
+
+```bash
+npm install -g rook-cli
+```
 
 ## Quickstart
-1. npm install
-2. rook init - And then follow the on screen instructions
-3. Build: `npm run build`
 
-## CLI Commands
-- `rook login` – Authenticate with GitHub (PAT) and register with the Rook backend.
-- `rook stats` – View level, XP bar, streak, recent achievements, and XP log.
-- `rook dungeon` – List daily quests (🗡️) and weekly boss quests (⚔️) with progress.
-- `rook leaderboard [--friends] [--limit N] [--page N] [--watch]` – View global/friends ladder, highlight yourself, auto-refresh with Socket.io or polling when watching.
-- `rook friends [list|add|remove|leaderboard]` – Manage your party and see friends-only ranks.
-- `rook share <achievement|stats> [id] [--twitter|--discord|--slack]` – Generate shareable links or ASCII stats cards.
-- `rook connect` – Select repos and auto-create GitHub webhooks pointing at the Rook backend.
-- `rook history` – View your recent XP timeline.
+```bash
+rook init
+```
 
-## Backend
-- Stack: Express + PostgreSQL + Socket.io
-- Run: set `DATABASE_URL`, optionally `PGSSL=1`, then `npm run backend` (defaults to `PORT=4000`).
-- Health check: `GET /api/health`
-- Schema: `backend/schema.sql`
-- Webhooks: `POST /api/webhooks/github` (set `GITHUB_WEBHOOK_SECRET` to verify). Handles push/PR/issue/review events and emits leaderboard updates.
+This walks you through GitHub authentication and repo connection. Once set up, your commits, PRs, issues, and reviews automatically earn XP.
 
-### Key API Routes
-- `POST /api/users/register`
-- `GET /api/users/:userId/stats`
-- `POST /api/users/:userId/xp`
-- `GET /api/users/:userId/quests/daily`
-- `GET /api/users/:userId/quests/weekly`
-- `POST /api/users/:userId/quests/:questId/complete`
-- `GET /api/leaderboard/global?limit=&page=`
-- `GET /api/users/:userId/leaderboard/friends`
-- `GET /api/users/:userId/friends`
-- `POST /api/users/:userId/friends`
-- `DELETE /api/users/:userId/friends/:friendId`
-- `GET /api/users/:userId/activity?limit=`
-- `GET /api/users/:userId/xp?limit=` (alias for XP history)
-- `POST /api/users/:userId/achievements/:achievementId/share`
-- `POST /api/github/webhooks` (body: `{ repoFullName, token }`) to auto-configure repo webhooks pointing to `/api/webhooks/github`
+## Commands
 
-## Notes
-- Config stored at `~/.rook/config.json` (contains GitHub token, user id, API URL).
-- Level formula: `floor(sqrt(totalXp / 1000)) + 1` with per-level progress bars.
-- Daily quests reset at midnight UTC; weekly boss quests regenerate each week.
-- Leaderboards broadcast `leaderboard:update` events via Socket.io; CLI `--watch` auto-refreshes.
-- Optional coach tips: set `OPENAI_API_KEY` on the backend to receive one-line guidance in `rook stats`.
+| Command | Description |
+|---------|-------------|
+| `rook init` | Onboarding: authenticate + connect repos |
+| `rook login` | Authenticate with GitHub PAT |
+| `rook stats` | View level, XP, streak, achievements |
+| `rook dungeon` | Daily quests and weekly boss quests |
+| `rook leaderboard` | Global or friends-only rankings |
+| `rook friends` | Manage your party |
+| `rook inventory` | View your loot drops |
+| `rook craft` | Craft items from loot |
+| `rook guild` | Create, join, or manage guilds |
+| `rook prestige` | Reset at level 20+ for permanent perks |
+| `rook connect` | Connect GitHub repos via webhooks |
+| `rook history` | XP activity timeline |
+| `rook share` | Share achievements to Twitter/Discord/Slack |
+| `rook notify` | Configure social notifications |
 
-## Local Testing Flow
-- Backend env: `DATABASE_URL=postgres://...`, `PORT=4000`, `GITHUB_WEBHOOK_SECRET=<secret>`, optional `OPENAI_API_KEY`.
-- Start backend: `cd backend && npm start` (http://localhost:4000).
-- CLI: `rook login --api-url http://localhost:4000/api`.
-- `rook connect` and pick a test repo to auto-create webhooks.
-- Trigger commits/PRs/issues/reviews; then:
-  - `rook stats` (XP, streak, achievements, coach tip when OpenAI enabled)
-  - `rook dungeon` (quest progress ticks up)
-  - `rook history` (XP activity log)
-  - `rook leaderboard --watch` (live updates or polling fallback)
+### Leaderboard Options
 
-## Production Verification
-- Render web service URL: https://rook-3658.onrender.com/api (Supabase DATABASE_URL with SSL as required).
-- `rook login` (defaults to the Render API), then `rook connect` for real repos.
-- Use real GitHub activity to confirm quests, streaks, achievements, weekly XP quest, coach tips (if OpenAI enabled), and leaderboard updates.
-# Production deployment complete! 🎉
-# Webhook working perfectly! 🚀
-# Test 
-another test
-// test
-// achievement test
-// trigger achievement
-// streak test
-// quest test
-// rook connect test
-# Quests table added! 🎮
-# Testing quest completion! 🗡️
-# Testing 🗡️
-# About to complete weekly boss! 💪
-# Final push to complete weekly boss! 🏆
+```bash
+rook leaderboard --friends --limit 20 --page 2 --watch
+```
+
+## Game Mechanics
+
+- **XP**: Earned from commits, PRs, code reviews, and issue closures
+- **Levels**: `floor(sqrt(totalXp / 1000)) + 1`
+- **Daily Quests**: 5 quests that reset at midnight UTC
+- **Weekly Boss**: Large objectives that reset each week
+- **Loot**: RNG drops with a luck meter that increases rare drop chances
+- **Crafting**: Combine loot items into powerful artifacts
+- **Guilds**: Team up for shared XP multipliers (up to 10% bonus)
+- **Prestige**: Reset at level 20+ for permanent +2% XP, +1 rare drop/day, -1% crafting cost per reset
+- **Streaks**: Consecutive active days multiply rewards
+
+## Self-Hosting the Backend
+
+The backend is an Express + PostgreSQL + Socket.io server.
+
+```bash
+cd backend
+npm install
+```
+
+Set environment variables:
+
+```bash
+DATABASE_URL=postgres://user:pass@host:5432/rook
+PORT=4000
+GITHUB_WEBHOOK_SECRET=your_secret
+OPENAI_API_KEY=optional_for_coach_tips
+```
+
+Run:
+
+```bash
+npm start
+```
+
+Point the CLI at your backend:
+
+```bash
+rook login --api-url http://localhost:4000/api
+```
+
+## API Reference
+
+See the full [API documentation](https://rook-docs.mintlify.app/api-reference/introduction).
+
+## Configuration
+
+Config is stored at `~/.rook/config.json` and contains your GitHub token, user ID, and API URL.
+
+## Contributing
+
+Pull requests welcome. See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
+
+## License
+
+[MIT](LICENSE)

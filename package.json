@@ -1,20 +1,47 @@
 {
   "name": "rook-cli",
   "version": "0.1.0",
-  "description": "The Developer's Roguelike CLI",
+  "description": "The Developer's Roguelike CLI - gamify your GitHub workflow with XP, quests, loot, and leaderboards",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
     "rook": "./dist/index.js"
   },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
   },
-  "keywords": ["cli", "developer", "gamification"],
-  "author": "Tarun Mittal",
+  "keywords": [
+    "cli",
+    "developer",
+    "gamification",
+    "github",
+    "xp",
+    "roguelike",
+    "productivity",
+    "leaderboard",
+    "quests"
+  ],
+  "author": "Tarun Mittal <tarun@chromaflow.ai>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TypeTenzinHoTT/rook.git"
+  },
+  "homepage": "https://github.com/TypeTenzinHoTT/rook",
+  "bugs": {
+    "url": "https://github.com/TypeTenzinHoTT/rook/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "axios": "^1.6.0",
     "boxen": "^7.1.0",

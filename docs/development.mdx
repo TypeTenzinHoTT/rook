@@ -1,94 +1,143 @@
 ---
-title: 'Development'
-description: 'Preview changes locally to update your docs'
+title: "Development"
+description: "Set up Rook for local development and self-hosting"
 ---
 
 <Info>
-  **Prerequisites**:
-  - Node.js version 19 or higher
-  - A docs repository with a `docs.json` file
+  **Prerequisites**: Node.js 18+, PostgreSQL 14+
 </Info>
 
-Follow these steps to install and run Mintlify on your operating system.
+## Local Setup
 
 <Steps>
-<Step title="Install the Mintlify CLI">
+<Step title="Clone the repository">
 
 ```bash
-npm i -g mint
+git clone https://github.com/TypeTenzinHoTT/rook.git
+cd rook
 ```
+
 </Step>
 
-<Step title="Preview locally">
-
-Navigate to your docs directory where your `docs.json` file is located, and run the following command:
+<Step title="Install CLI dependencies">
 
 ```bash
-mint dev
+npm install
 ```
 
-A local preview of your documentation will be available at `http://localhost:3000`.
+</Step>
+
+<Step title="Build the CLI">
+
+```bash
+npm run build
+```
+
+</Step>
+
+<Step title="Set up the backend">
+
+```bash
+cd backend
+npm install
+```
+
+Create a `backend/.env` file:
+
+```bash
+DATABASE_URL=postgres://user:pass@localhost:5432/rook
+PORT=4000
+GITHUB_WEBHOOK_SECRET=your_secret_here
+# Optional: OPENAI_API_KEY=sk-... (enables coach tips in rook stats)
+```
+
+</Step>
+
+<Step title="Initialize the database">
+
+Run the schema and migrations against your PostgreSQL instance:
+
+```bash
+psql $DATABASE_URL -f schema.sql
+for f in migrations/*.sql; do psql $DATABASE_URL -f "$f"; done
+```
+
+</Step>
+
+<Step title="Start the backend">
+
+```bash
+npm start
+```
+
+The server runs at `http://localhost:4000`.
+
+</Step>
+
+<Step title="Point the CLI at local backend">
+
+```bash
+rook login --api-url http://localhost:4000/api
+```
 
 </Step>
 </Steps>
 
-## Custom ports
+## CLI Commands Reference
 
-By default, Mintlify uses port 3000. You can customize the port Mintlify runs on by using the `--port` flag. For example, to run Mintlify on port 3333, use this command:
+| Command | Description |
+|---------|-------------|
+| `rook init` | Full onboarding: login + connect repos |
+| `rook login` | Authenticate with GitHub PAT |
+| `rook stats` | Level, XP bar, streak, achievements, coach tip |
+| `rook dungeon` | Daily quests + weekly boss quests |
+| `rook leaderboard [--friends] [--watch]` | Rankings with optional live refresh |
+| `rook friends [list\|add\|remove]` | Manage your party |
+| `rook inventory` | View loot drops |
+| `rook craft` | Craft items from loot |
+| `rook guild [create\|join\|invite\|leave\|stats]` | Guild management |
+| `rook prestige` | Reset at level 20+ for permanent perks |
+| `rook connect` | Set up GitHub webhooks |
+| `rook history` | XP activity log |
+| `rook share <target> [id]` | Share to Twitter/Discord/Slack |
+| `rook notify` | Configure notification integrations |
+
+## Project Structure
+
+```
+rook/
+  src/             # TypeScript CLI source
+    commands/      # Individual command handlers
+    lib/           # API client, config, UI utilities
+    types/         # TypeScript interfaces
+  backend/
+    server.js      # Express entry point
+    routes/        # API route handlers
+    lib/           # Business logic (XP, quests, loot, guilds)
+    migrations/    # SQL migration files
+    schema.sql     # Base database schema
+  docs/            # Mintlify documentation
+```
+
+## Architecture
+
+```
+GitHub Webhooks → Backend (Express + PostgreSQL + Socket.io) → CLI (Commander.js)
+```
+
+- **Webhooks** capture push, PR, issue, and review events
+- **Backend** calculates XP, manages quests, handles loot RNG, and broadcasts updates
+- **CLI** displays progress with styled terminal output (chalk, boxen, ora)
+- **Socket.io** powers real-time leaderboard updates when using `--watch`
+
+## Documentation Development
+
+To preview docs locally:
 
 ```bash
-mint dev --port 3333
+npm i -g mint
+cd docs
+mint dev
 ```
 
-If you attempt to run Mintlify on a port that's already in use, it will use the next available port:
-
-```md
-Port 3000 is already in use. Trying 3001 instead.
-```
-
-## Mintlify versions
-
-Please note that each CLI release is associated with a specific version of Mintlify. If your local preview does not align with the production version, please update the CLI:
-
-```bash
-npm mint update
-```
-
-## Validating links
-
-The CLI can assist with validating links in your documentation. To identify any broken links, use the following command:
-
-```bash
-mint broken-links
-```
-
-## Deployment
-
-If the deployment is successful, you should see the following:
-
-<Frame>
-  <img src="/images/checks-passed.png" alt="Screenshot of a deployment confirmation message that says All checks have passed." style={{ borderRadius: '0.5rem' }} />
-</Frame>
-
-## Code formatting
-
-We suggest using extensions on your IDE to recognize and format MDX. If you're a VSCode user, consider the [MDX VSCode extension](https://marketplace.visualstudio.com/items?itemName=unifiedjs.vscode-mdx) for syntax highlighting, and [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) for code formatting.
-
-## Troubleshooting
-
-<AccordionGroup>
-  <Accordion title='Error: Could not load the "sharp" module using the darwin-arm64 runtime'>
-
-    This may be due to an outdated version of node. Try the following:
-    1. Remove the currently-installed version of the CLI: `npm remove -g mint`
-    2. Upgrade to Node v19 or higher.
-    3. Reinstall the CLI: `npm i -g mint`
-  </Accordion>
-
-  <Accordion title="Issue: Encountering an unknown error">
-  
-    Solution: Go to the root of your device and delete the `~/.mintlify` folder. Then run `mint dev` again.
-  </Accordion>
-</AccordionGroup>
-
-Curious about what changed in the latest CLI version? Check out the [CLI changelog](https://www.npmjs.com/package/mintlify?activeTab=versions).
+Preview at `http://localhost:3000`.
